@@ -6,8 +6,10 @@ const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Try to decode the session cookie
-  const token = req.cookies.get("authjs.session-token")?.value;
+  // Try to decode the session cookie (name differs in production HTTPS vs dev HTTP)
+  const isSecure = req.nextUrl.protocol === "https:";
+  const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token";
+  const token = req.cookies.get(cookieName)?.value;
   let isLoggedIn = false;
 
   if (token) {
@@ -15,7 +17,7 @@ export async function middleware(req: NextRequest) {
       const decoded = await decode({
         token,
         secret: process.env.NEXTAUTH_SECRET!,
-        salt: "authjs.session-token",
+        salt: cookieName,
       });
       isLoggedIn = !!decoded;
     } catch {

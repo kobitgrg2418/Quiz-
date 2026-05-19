@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const isSecure = process.env.NODE_ENV === "production";
+    const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token";
+
     const token = await encode({
       token: {
         id: user.id,
@@ -50,13 +53,13 @@ export async function POST(req: NextRequest) {
         sub: user.id,
       },
       secret: process.env.NEXTAUTH_SECRET!,
-      salt: "authjs.session-token",
+      salt: cookieName,
     });
 
     const cookieStore = await cookies();
-    cookieStore.set("authjs.session-token", token, {
+    cookieStore.set(cookieName, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecure,
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
