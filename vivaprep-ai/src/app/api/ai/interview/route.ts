@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { generateInterviewQuestions } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
 import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
+import { isValidId, safeError } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,10 +21,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { documentId } = await req.json();
+    const body = await req.json();
+    const documentId = typeof body.documentId === "string" ? body.documentId : "";
 
-    if (!documentId) {
-      return NextResponse.json({ error: "Document ID required" }, { status: 400 });
+    if (!documentId || !isValidId(documentId)) {
+      return NextResponse.json({ error: "Valid document ID required" }, { status: 400 });
     }
 
     const document = await prisma.document.findUnique({
@@ -43,9 +45,9 @@ export async function POST(req: NextRequest) {
     const questions = await generateInterviewQuestions(content);
 
     return NextResponse.json(questions);
-  } catch (error) {
-    console.error("Interview generation error:", error);
-    const errorMessage = (error as any)?.message?.includes("GEMINI_API_KEY")
+  } catch (error: unknown) {
+    console.error("Interview generation error:", safeError(error));
+    const errorMessage = (error instanceof Error && error.message?.includes("GEMINI_API_KEY"))
       ? "Gemini API key not configured. Add GEMINI_API_KEY to .env."
       : "Failed to generate interview questions";
     return NextResponse.json({ error: errorMessage }, { status: 500 });

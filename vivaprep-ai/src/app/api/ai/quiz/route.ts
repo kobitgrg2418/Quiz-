@@ -5,6 +5,7 @@ import { Prisma, QuizMode, QuizType, QuestionType } from "@/generated/prisma/cli
 import { generateQuiz } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
 import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
+import { isValidId, safeError } from "@/lib/security";
 
 const VALID_MODES = Object.values(QuizMode);
 const VALID_TYPES = Object.values(QuizType);
@@ -69,10 +70,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { documentId, mode = "MEDIUM", type = "MIXED", count = 10 } = await req.json();
+    const body = await req.json();
+    const documentId = typeof body.documentId === "string" ? body.documentId : "";
+    const mode = typeof body.mode === "string" ? body.mode : "MEDIUM";
+    const type = typeof body.type === "string" ? body.type : "MIXED";
+    const count = typeof body.count === "number" ? body.count : 10;
 
-    if (!documentId) {
-      return NextResponse.json({ error: "Document ID required" }, { status: 400 });
+    if (!documentId || !isValidId(documentId)) {
+      return NextResponse.json({ error: "Valid document ID required" }, { status: 400 });
     }
 
     if (!VALID_MODES.includes(mode)) {
@@ -121,9 +126,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(quiz);
-  } catch (error: any) {
-    console.error("Quiz generation error:", error);
-    const message = error?.message?.includes("GEMINI_API_KEY")
+  } catch (error: unknown) {
+    console.error("Quiz generation error:", safeError(error));
+    const message = (error instanceof Error && error.message?.includes("GEMINI_API_KEY"))
       ? "Gemini API key not configured. Add GEMINI_API_KEY to .env to enable quiz generation."
       : "Failed to generate quiz";
     return NextResponse.json({ error: message }, { status: 500 });

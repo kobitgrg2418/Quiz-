@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateFlashcards } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
 import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
+import { isValidId, safeError } from "@/lib/security";
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,10 +57,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { documentId, count = 15 } = await req.json();
+    const body = await req.json();
+    const documentId = typeof body.documentId === "string" ? body.documentId : "";
+    const count = typeof body.count === "number" ? body.count : 15;
 
-    if (!documentId) {
-      return NextResponse.json({ error: "Document ID required" }, { status: 400 });
+    if (!documentId || !isValidId(documentId)) {
+      return NextResponse.json({ error: "Valid document ID required" }, { status: 400 });
     }
 
     const document = await prisma.document.findUnique({
@@ -99,9 +102,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(flashcardSet);
-  } catch (error: any) {
-    console.error("Flashcard generation error:", error);
-    const message = error?.message?.includes("GEMINI_API_KEY")
+  } catch (error: unknown) {
+    console.error("Flashcard generation error:", safeError(error));
+    const message = (error instanceof Error && error.message?.includes("GEMINI_API_KEY"))
       ? "Gemini API key not configured. Add GEMINI_API_KEY to .env."
       : "Failed to generate flashcards";
     return NextResponse.json({ error: message }, { status: 500 });

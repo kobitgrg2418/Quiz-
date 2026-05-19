@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import {
+  sanitizeInput,
+  sanitizeEmail,
+  validatePassword,
+  safeError,
+} from "@/lib/security";
 
 // GET /api/profile — fetch current user profile
 export async function GET() {
@@ -38,20 +44,40 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, email, currentPassword, newPassword, preferences } = body;
+  const { currentPassword, preferences } = body;
 
   const updateData: Record<string, unknown> = {};
 
-  // Update preferences if provided
+  // Update preferences if provided (sanitize JSON)
   if (preferences !== undefined) {
+    if (typeof preferences !== "object" || Array.isArray(preferences)) {
+      return NextResponse.json(
+        { error: "Preferences must be a JSON object" },
+        { status: 400 }
+      );
+    }
     updateData.preferences = preferences;
   }
 
-  if (name !== undefined) {
-    updateData.name = name.trim();
+  if (body.name !== undefined) {
+    const name = sanitizeInput(String(body.name));
+    if (name.length < 2 || name.length > 100) {
+      return NextResponse.json(
+        { error: "Name must be between 2 and 100 characters" },
+        { status: 400 }
+      );
+    }
+    updateData.name = name;
   }
 
-  if (email !== undefined) {
+  if (body.email !== undefined) {
+    const email = sanitizeEmail(String(body.email));
+    if (!email) {
+      return NextResponse.json(
+        { error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing && existing.id !== session.user.id) {
       return NextResponse.json(
@@ -59,10 +85,11 @@ export async function PUT(req: NextRequest) {
         { status: 409 }
       );
     }
-    updateData.email = email.trim().toLowerCase();
+    updateData.email = email;
   }
 
   // Password change
+  const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
   if (newPassword) {
     if (!currentPassword) {
       return NextResponse.json(
@@ -90,9 +117,10 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    if (newPassword.length < 8) {
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.valid) {
       return NextResponse.json(
-        { error: "New password must be at least 8 characters" },
+        { error: passwordCheck.errors[0] },
         { status: 400 }
       );
     }

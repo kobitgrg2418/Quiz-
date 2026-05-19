@@ -5,6 +5,7 @@ import { generateStreamingCompletion } from "@/lib/ai";
 import { searchChunks } from "@/services/ai/pdf-processor";
 import { CHAT_SYSTEM_PROMPT } from "@/services/ai/prompts";
 import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
+import { sanitizeInput, isValidId, safeError } from "@/lib/security";
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,11 +58,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { documentId, message } = await req.json();
+    const body = await req.json();
+    const documentId = typeof body.documentId === "string" ? body.documentId : "";
+    const message = typeof body.message === "string" ? sanitizeInput(body.message) : "";
 
-    if (!documentId || !message) {
+    if (!documentId || !isValidId(documentId)) {
       return NextResponse.json(
-        { error: "Document ID and message required" },
+        { error: "Valid document ID required" },
+        { status: 400 }
+      );
+    }
+
+    if (!message || message.length > 10000) {
+      return NextResponse.json(
+        { error: "Message is required (max 10,000 characters)" },
         { status: 400 }
       );
     }
@@ -108,13 +118,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ response: fullResponse });
-  } catch (error: any) {
-    console.error("Chat error:", error);
-    const message = error?.message?.includes("GEMINI_API_KEY")
+  } catch (error: unknown) {
+    console.error("Chat error:", safeError(error));
+    const msg = (error instanceof Error && error.message?.includes("GEMINI_API_KEY"))
       ? "Gemini API key not configured. Add GEMINI_API_KEY to .env to enable AI chat."
       : "Failed to process chat message";
     return NextResponse.json(
-      { error: message },
+      { error: msg },
       { status: 500 }
     );
   }

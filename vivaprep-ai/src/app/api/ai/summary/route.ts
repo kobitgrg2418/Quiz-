@@ -5,6 +5,7 @@ import { NoteMode } from "@/generated/prisma/client";
 import { generateSummary } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
 import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
+import { isValidId, safeError } from "@/lib/security";
 
 const VALID_MODES = Object.values(NoteMode);
 
@@ -23,10 +24,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { documentId, mode = "CONCISE" } = await req.json();
+    const body = await req.json();
+    const documentId = typeof body.documentId === "string" ? body.documentId : "";
+    const mode = typeof body.mode === "string" ? body.mode : "CONCISE";
 
-    if (!documentId) {
-      return NextResponse.json({ error: "Document ID required" }, { status: 400 });
+    if (!documentId || !isValidId(documentId)) {
+      return NextResponse.json({ error: "Valid document ID required" }, { status: 400 });
     }
 
     if (!VALID_MODES.includes(mode)) {
@@ -73,9 +76,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ note, summary: generated });
-  } catch (error) {
-    console.error("Summary generation error:", error);
-    const errorMessage = (error as any)?.message?.includes("GEMINI_API_KEY")
+  } catch (error: unknown) {
+    console.error("Summary generation error:", safeError(error));
+    const errorMessage = (error instanceof Error && error.message?.includes("GEMINI_API_KEY"))
       ? "Gemini API key not configured. Add GEMINI_API_KEY to .env."
       : "Failed to generate summary";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
