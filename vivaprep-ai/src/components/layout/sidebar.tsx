@@ -40,7 +40,7 @@ export function Sidebar() {
   return (
     <aside className="vp-sidebar">
       <div style={{ padding: "4px 4px 16px", borderBottom: "1px solid var(--vp-border)", marginBottom: 8 }}>
-        <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
+        <Link href="/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
           <Logo size="md" />
         </Link>
       </div>

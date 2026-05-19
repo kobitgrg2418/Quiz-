@@ -5,6 +5,42 @@ import { generateStreamingCompletion } from "@/lib/ai";
 import { searchChunks } from "@/services/ai/pdf-processor";
 import { CHAT_SYSTEM_PROMPT } from "@/services/ai/prompts";
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const documentId = req.nextUrl.searchParams.get("documentId");
+    if (!documentId) {
+      return NextResponse.json({ error: "Document ID required" }, { status: 400 });
+    }
+
+    // Verify ownership
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      select: { userId: true },
+    });
+
+    if (!document || document.userId !== session.user.id) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    const messages = await prisma.chatMessage.findMany({
+      where: { documentId, userId: session.user.id },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+      select: { id: true, role: true, content: true, createdAt: true },
+    });
+
+    return NextResponse.json({ messages });
+  } catch (error) {
+    console.error("Chat history error:", error);
+    return NextResponse.json({ error: "Failed to fetch chat history" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -23,12 +59,20 @@ export async function POST(req: NextRequest) {
 
     const document = await prisma.document.findUnique({
       where: { id: documentId },
+      select: { id: true, status: true, userId: true },
     });
 
-    if (!document || document.status !== "READY") {
+    if (!document || document.userId !== session.user.id) {
       return NextResponse.json(
-        { error: "Document not found or not ready" },
+        { error: "Document not found" },
         { status: 404 }
+      );
+    }
+
+    if (document.status !== "READY") {
+      return NextResponse.json(
+        { error: "Document is still processing" },
+        { status: 400 }
       );
     }
 

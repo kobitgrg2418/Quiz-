@@ -19,10 +19,15 @@ export async function POST(req: NextRequest) {
 
     const document = await prisma.document.findUnique({
       where: { id: documentId },
+      select: { id: true, status: true, userId: true },
     });
 
-    if (!document || document.status !== "READY") {
-      return NextResponse.json({ error: "Document not found or not ready" }, { status: 404 });
+    if (!document || document.userId !== session.user.id) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    if (document.status !== "READY") {
+      return NextResponse.json({ error: "Document is still processing" }, { status: 400 });
     }
 
     const content = await getDocumentContext(documentId);

@@ -91,11 +91,24 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
     setShowExplanation(true);
   };
 
+  const saveAttempt = async () => {
+    try {
+      await fetch(`/api/ai/quiz/${id}/attempts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, timeTaken: timer }),
+      });
+    } catch {
+      // Silently fail — results are still shown locally
+    }
+  };
+
   const nextQuestion = () => {
     setShowExplanation(false);
     if (currentQ < questions.length - 1) {
       setCurrentQ(currentQ + 1);
     } else {
+      saveAttempt();
       setState("results");
     }
   };

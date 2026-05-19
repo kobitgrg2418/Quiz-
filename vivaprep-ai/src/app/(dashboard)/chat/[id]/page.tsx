@@ -27,16 +27,61 @@ const suggestions = [
 
 export default function ChatPage() {
   const params = useParams();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "Hi! I've analyzed your document. Ask me anything about the content - I can explain concepts, generate questions, create summaries, or help you prepare for exams.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history on mount
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await fetch(`/api/ai/chat?documentId=${params.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && data.messages.length > 0) {
+            setMessages(
+              data.messages.map((m: { id: string; role: string; content: string }) => ({
+                id: m.id,
+                role: m.role as "user" | "assistant",
+                content: m.content,
+              }))
+            );
+          } else {
+            setMessages([
+              {
+                id: "welcome",
+                role: "assistant",
+                content:
+                  "Hi! I've analyzed your document. Ask me anything about the content - I can explain concepts, generate questions, create summaries, or help you prepare for exams.",
+              },
+            ]);
+          }
+        } else {
+          setMessages([
+            {
+              id: "welcome",
+              role: "assistant",
+              content:
+                "Hi! I've analyzed your document. Ask me anything about the content.",
+            },
+          ]);
+        }
+      } catch {
+        setMessages([
+          {
+            id: "welcome",
+            role: "assistant",
+            content: "Hi! Ask me anything about this document.",
+          },
+        ]);
+      } finally {
+        setHistoryLoaded(true);
+      }
+    }
+    loadHistory();
+  }, [params.id]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });

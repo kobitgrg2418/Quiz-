@@ -11,11 +11,12 @@ export async function GET(req: NextRequest) {
 
     const userId = session.user.id;
 
-    const [totalQuizzes, quizAttempts, flashcardSets, studySessions] =
+    const [totalQuizzes, quizAttempts, flashcardSets, studySessions, totalNotes, totalDocuments] =
       await Promise.all([
-        prisma.quiz.count(),
+        prisma.quiz.count({ where: { document: { userId } } }),
         prisma.quizAttempt.findMany({
           where: { userId },
+          include: { quiz: { select: { title: true } } },
           orderBy: { createdAt: "desc" },
           take: 50,
         }),
@@ -25,6 +26,8 @@ export async function GET(req: NextRequest) {
           orderBy: { createdAt: "desc" },
           take: 30,
         }),
+        prisma.note.count({ where: { userId } }),
+        prisma.document.count({ where: { userId } }),
       ]);
 
     const averageScore =
@@ -38,12 +41,40 @@ export async function GET(req: NextRequest) {
       0
     );
 
+    // Calculate streak (consecutive days with activity)
+    const attemptDates = quizAttempts.map((a) =>
+      new Date(a.createdAt).toDateString()
+    );
+    const uniqueDays = [...new Set(attemptDates)];
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - i);
+      if (uniqueDays.includes(checkDate.toDateString())) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+
     return NextResponse.json({
       totalQuizzes,
       averageScore: Math.round(averageScore),
       totalFlashcards: flashcardSets,
       totalStudyTime,
-      recentAttempts: quizAttempts.slice(0, 10),
+      totalNotes,
+      totalDocuments,
+      streak,
+      recentAttempts: quizAttempts.slice(0, 10).map((a) => ({
+        id: a.id,
+        score: a.score,
+        totalPoints: a.totalPoints,
+        timeTaken: a.timeTaken,
+        quizTitle: a.quiz.title,
+        completedAt: a.completedAt,
+        createdAt: a.createdAt,
+      })),
     });
   } catch (error) {
     console.error("Analytics error:", error);

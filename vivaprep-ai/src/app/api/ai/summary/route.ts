@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { NoteMode } from "@/generated/prisma/client";
 import { generateSummary } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
+
+const VALID_MODES = Object.values(NoteMode);
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,12 +20,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Document ID required" }, { status: 400 });
     }
 
+    if (!VALID_MODES.includes(mode)) {
+      return NextResponse.json({ error: "Invalid summary mode" }, { status: 400 });
+    }
+
     const document = await prisma.document.findUnique({
       where: { id: documentId },
+      select: { id: true, status: true, userId: true },
     });
 
-    if (!document || document.status !== "READY") {
-      return NextResponse.json({ error: "Document not found or not ready" }, { status: 404 });
+    if (!document || document.userId !== session.user.id) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    if (document.status !== "READY") {
+      return NextResponse.json({ error: "Document is still processing" }, { status: 400 });
     }
 
     const content = await getDocumentContext(documentId);
@@ -45,7 +57,7 @@ export async function POST(req: NextRequest) {
       data: {
         title: generated.title,
         content: noteContent,
-        mode: mode as any,
+        mode: mode as NoteMode,
         documentId,
         userId: session.user.id,
       },

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, QuizMode, QuizType, QuestionType } from "@/generated/prisma/client";
 import { generateQuiz } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
+
+const VALID_MODES = Object.values(QuizMode);
+const VALID_TYPES = Object.values(QuizType);
 
 export async function GET() {
   try {
@@ -48,26 +51,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Document ID required" }, { status: 400 });
     }
 
-    const document = await prisma.document.findUnique({
-      where: { id: documentId },
-    });
-
-    if (!document || document.status !== "READY") {
-      return NextResponse.json({ error: "Document not found or not ready" }, { status: 404 });
+    if (!VALID_MODES.includes(mode)) {
+      return NextResponse.json({ error: "Invalid quiz mode" }, { status: 400 });
+    }
+    if (!VALID_TYPES.includes(type)) {
+      return NextResponse.json({ error: "Invalid quiz type" }, { status: 400 });
     }
 
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      select: { id: true, status: true, userId: true },
+    });
+
+    if (!document || document.userId !== session.user.id) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    if (document.status !== "READY") {
+      return NextResponse.json({ error: "Document is still processing" }, { status: 400 });
+    }
+
+    const clampedCount = Math.max(1, Math.min(count, 30));
+
     const content = await getDocumentContext(documentId);
-    const generated = await generateQuiz(content, mode, type, count);
+    const generated = await generateQuiz(content, mode, type, clampedCount);
 
     const quiz = await prisma.quiz.create({
       data: {
         title: generated.title,
         documentId,
-        mode: mode as any,
-        type: type as any,
+        mode: mode as QuizMode,
+        type: type as QuizType,
         questions: {
           create: generated.questions.map((q, i) => ({
-            type: q.type as any,
+            type: (q.type || "MCQ") as QuestionType,
             question: q.question,
             options: q.options ? q.options : Prisma.JsonNull,
             answer: q.answer,
