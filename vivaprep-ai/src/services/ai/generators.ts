@@ -1,4 +1,4 @@
-import { generateCompletion } from "@/lib/openai";
+import { generateCompletion } from "@/lib/ai";
 import {
   QUIZ_SYSTEM_PROMPT,
   FLASHCARD_SYSTEM_PROMPT,

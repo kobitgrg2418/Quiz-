@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  RotateCcw,
   Shuffle,
   ThumbsUp,
   ThumbsDown,
   Minus,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,30 +19,84 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
-const mockFlashcards = [
-  { id: "1", front: "What is supervised learning?", back: "A type of machine learning where the model is trained on labeled data, learning to map inputs to known outputs.", example: "Predicting house prices based on features like size and location.", note: "Most common type of ML in production." },
-  { id: "2", front: "What is gradient descent?", back: "An optimization algorithm used to minimize the loss function by iteratively updating model parameters in the direction of steepest descent.", example: "Like rolling a ball downhill to find the lowest point.", note: "Learning rate is a critical hyperparameter." },
-  { id: "3", front: "What is overfitting?", back: "When a model learns the training data too well, including noise, leading to poor generalization on unseen data.", example: "A model that memorizes exam answers but can't solve new problems.", note: "Regularization and more data help prevent this." },
-  { id: "4", front: "What is a neural network?", back: "A computational model inspired by biological neural networks, consisting of layers of interconnected nodes (neurons) that process information.", example: "Image recognition classifying photos of cats vs dogs.", note: "Deep learning uses networks with many layers." },
-  { id: "5", front: "What is backpropagation?", back: "An algorithm for training neural networks by computing gradients of the loss function with respect to each weight, propagating errors backwards through the network.", example: "Adjusting weights after each training batch to reduce prediction errors.", note: "Relies on the chain rule of calculus." },
-];
+interface FlashcardData {
+  id: string;
+  front: string;
+  back: string;
+  example: string | null;
+  note: string | null;
+  order: number;
+}
 
-export default function FlashcardStudyPage() {
+interface FlashcardSetDetail {
+  id: string;
+  title: string;
+  document: { title: string };
+  flashcards: FlashcardData[];
+}
+
+export default function FlashcardStudyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [set, setSet] = useState<FlashcardSetDetail | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [ratings, setRatings] = useState<Record<number, "easy" | "normal" | "hard">>({});
   const [direction, setDirection] = useState(0);
 
-  const card = mockFlashcards[currentIdx];
-  const progress = ((currentIdx + 1) / mockFlashcards.length) * 100;
+  useEffect(() => {
+    async function fetchSet() {
+      try {
+        const res = await fetch(`/api/ai/flashcards/${id}`);
+        if (!res.ok) throw new Error("Not found");
+        const data = await res.json();
+        data.flashcards.sort((a: FlashcardData, b: FlashcardData) => a.order - b.order);
+        setSet(data);
+      } catch {
+        setError("Failed to load flashcard set");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSet();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading flashcards...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !set || set.flashcards.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="text-center max-w-md w-full p-8">
+          <p className="text-muted-foreground mb-4">{error || "No flashcards found"}</p>
+          <Link href="/flashcards">
+            <Button variant="gradient">Back to Flashcards</Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+
+  const cards = set.flashcards;
+  const card = cards[currentIdx];
+  const progress = ((currentIdx + 1) / cards.length) * 100;
 
   const navigate = (dir: number) => {
     setDirection(dir);
     setIsFlipped(false);
     setCurrentIdx((prev) => {
       const next = prev + dir;
-      if (next < 0) return mockFlashcards.length - 1;
-      if (next >= mockFlashcards.length) return 0;
+      if (next < 0) return cards.length - 1;
+      if (next >= cards.length) return 0;
       return next;
     });
   };
@@ -66,7 +120,7 @@ export default function FlashcardStudyPage() {
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{currentIdx + 1}/{mockFlashcards.length}</Badge>
+          <Badge variant="secondary">{currentIdx + 1}/{cards.length}</Badge>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={shuffle}>
             <Shuffle className="h-4 w-4" />
           </Button>
@@ -75,7 +129,6 @@ export default function FlashcardStudyPage() {
 
       <Progress value={progress} className="h-2" />
 
-      {/* Flashcard */}
       <div className="perspective-1000">
         <AnimatePresence mode="wait">
           <motion.div
@@ -91,12 +144,9 @@ export default function FlashcardStudyPage() {
             >
               <div className="flex flex-col items-center justify-center p-8 min-h-[350px] text-center">
                 {!isFlipped ? (
-                  <motion.div
-                    initial={{ rotateY: 0 }}
-                    className="space-y-4"
-                  >
+                  <motion.div initial={{ rotateY: 0 }} className="space-y-4">
                     <Badge variant="secondary" className="text-xs">
-                      {currentIdx + 1} of {mockFlashcards.length}
+                      {currentIdx + 1} of {cards.length}
                     </Badge>
                     <h2 className="text-xl font-semibold leading-relaxed">{card.front}</h2>
                     <p className="text-sm text-muted-foreground">Tap to reveal answer</p>
@@ -124,40 +174,20 @@ export default function FlashcardStudyPage() {
         </AnimatePresence>
       </div>
 
-      {/* Controls */}
       <div className="flex items-center justify-between">
         <Button variant="outline" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
 
         {isFlipped && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2"
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn("rounded-full", ratings[currentIdx] === "hard" && "border-red-500 bg-red-50")}
-              onClick={() => rate("hard")}
-            >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className={cn("rounded-full", ratings[currentIdx] === "hard" && "border-red-500 bg-red-50")} onClick={() => rate("hard")}>
               <ThumbsDown className="mr-1 h-3 w-3 text-red-500" /> Hard
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn("rounded-full", ratings[currentIdx] === "normal" && "border-amber-500 bg-amber-50")}
-              onClick={() => rate("normal")}
-            >
+            <Button variant="outline" size="sm" className={cn("rounded-full", ratings[currentIdx] === "normal" && "border-amber-500 bg-amber-50")} onClick={() => rate("normal")}>
               <Minus className="mr-1 h-3 w-3 text-amber-500" /> Normal
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn("rounded-full", ratings[currentIdx] === "easy" && "border-emerald-500 bg-emerald-50")}
-              onClick={() => rate("easy")}
-            >
+            <Button variant="outline" size="sm" className={cn("rounded-full", ratings[currentIdx] === "easy" && "border-emerald-500 bg-emerald-50")} onClick={() => rate("easy")}>
               <ThumbsUp className="mr-1 h-3 w-3 text-emerald-500" /> Easy
             </Button>
           </motion.div>
@@ -168,7 +198,6 @@ export default function FlashcardStudyPage() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="flex justify-center gap-6 text-sm text-muted-foreground">
         <span className="text-emerald-600">{Object.values(ratings).filter((r) => r === "easy").length} Easy</span>
         <span className="text-amber-600">{Object.values(ratings).filter((r) => r === "normal").length} Normal</span>

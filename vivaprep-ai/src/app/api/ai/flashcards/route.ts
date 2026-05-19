@@ -4,6 +4,29 @@ import { prisma } from "@/lib/prisma";
 import { generateFlashcards } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
 
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const sets = await prisma.flashcardSet.findMany({
+      where: { userId: session.user.id },
+      include: {
+        document: { select: { title: true } },
+        flashcards: { select: { id: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(sets);
+  } catch (error) {
+    console.error("Flashcard list error:", error);
+    return NextResponse.json({ error: "Failed to fetch flashcards" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -49,8 +72,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(flashcardSet);
   } catch (error: any) {
     console.error("Flashcard generation error:", error);
-    const message = error?.message?.includes("OPENAI_API_KEY")
-      ? "OpenAI API key not configured. Add OPENAI_API_KEY to .env to enable flashcard generation."
+    const message = error?.message?.includes("GEMINI_API_KEY")
+      ? "Gemini API key not configured. Add GEMINI_API_KEY to .env."
       : "Failed to generate flashcards";
     return NextResponse.json({ error: message }, { status: 500 });
   }

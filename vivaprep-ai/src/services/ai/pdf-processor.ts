@@ -1,5 +1,5 @@
 import { PDFParse } from "pdf-parse";
-import { generateEmbedding } from "@/lib/openai";
+import { generateEmbedding } from "@/lib/ai";
 import { prisma } from "@/lib/prisma";
 
 const CHUNK_SIZE = 1000;
@@ -96,7 +96,7 @@ function chunkText(text: string): { content: string; page: number }[] {
 }
 
 async function detectTopics(text: string): Promise<string[]> {
-  const { generateCompletion } = await import("@/lib/openai");
+  const { generateCompletion } = await import("@/lib/ai");
 
   try {
     const result = await generateCompletion(

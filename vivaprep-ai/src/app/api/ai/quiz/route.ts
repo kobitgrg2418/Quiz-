@@ -5,6 +5,36 @@ import { Prisma } from "@/generated/prisma/client";
 import { generateQuiz } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
 
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const quizzes = await prisma.quiz.findMany({
+      where: {
+        document: { userId: session.user.id },
+      },
+      include: {
+        document: { select: { title: true } },
+        questions: { select: { id: true } },
+        attempts: {
+          where: { userId: session.user.id },
+          select: { score: true, totalPoints: true },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(quizzes);
+  } catch (error) {
+    console.error("Quiz list error:", error);
+    return NextResponse.json({ error: "Failed to fetch quizzes" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -52,8 +82,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(quiz);
   } catch (error: any) {
     console.error("Quiz generation error:", error);
-    const message = error?.message?.includes("OPENAI_API_KEY")
-      ? "OpenAI API key not configured. Add OPENAI_API_KEY to .env to enable quiz generation."
+    const message = error?.message?.includes("GEMINI_API_KEY")
+      ? "Gemini API key not configured. Add GEMINI_API_KEY to .env to enable quiz generation."
       : "Failed to generate quiz";
     return NextResponse.json({ error: message }, { status: 500 });
   }

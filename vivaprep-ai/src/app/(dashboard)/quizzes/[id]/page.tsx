@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   Trophy,
   RotateCcw,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,57 +20,51 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-const mockQuestions = [
-  {
-    id: "1",
-    type: "MCQ" as const,
-    question: "What is the primary purpose of a loss function in machine learning?",
-    options: ["A. To measure the difference between predicted and actual values", "B. To increase the model complexity", "C. To reduce training time", "D. To add more features"],
-    answer: "A",
-    explanation: "A loss function quantifies how well a model's predictions match the actual target values. It provides a measure that the optimization algorithm tries to minimize.",
-  },
-  {
-    id: "2",
-    type: "TRUE_FALSE" as const,
-    question: "Gradient descent always finds the global minimum of a loss function.",
-    options: ["True", "False"],
-    answer: "False",
-    explanation: "Gradient descent can get stuck in local minima, especially in non-convex functions. Only for convex functions is it guaranteed to find the global minimum.",
-  },
-  {
-    id: "3",
-    type: "MCQ" as const,
-    question: "Which activation function is most commonly used in hidden layers of deep neural networks?",
-    options: ["A. Sigmoid", "B. ReLU", "C. Tanh", "D. Softmax"],
-    answer: "B",
-    explanation: "ReLU (Rectified Linear Unit) is the most widely used activation function in hidden layers due to its simplicity and effectiveness in addressing the vanishing gradient problem.",
-  },
-  {
-    id: "4",
-    type: "MCQ" as const,
-    question: "What does overfitting mean in machine learning?",
-    options: ["A. The model is too simple", "B. The model performs well on training data but poorly on unseen data", "C. The model trains too slowly", "D. The model has too few parameters"],
-    answer: "B",
-    explanation: "Overfitting occurs when a model learns the training data too well, including noise and outliers, leading to poor generalization on new, unseen data.",
-  },
-  {
-    id: "5",
-    type: "TRUE_FALSE" as const,
-    question: "Regularization techniques like L1 and L2 help prevent overfitting.",
-    options: ["True", "False"],
-    answer: "True",
-    explanation: "Regularization adds a penalty term to the loss function that discourages the model from learning overly complex patterns, thus reducing overfitting.",
-  },
-];
+interface QuestionData {
+  id: string;
+  type: string;
+  question: string;
+  options: string[] | null;
+  answer: string;
+  explanation: string | null;
+  order: number;
+}
 
-type QuizState = "intro" | "active" | "review" | "results";
+interface QuizDetail {
+  id: string;
+  title: string;
+  mode: string;
+  questions: QuestionData[];
+}
 
-export default function QuizPage() {
-  const [state, setState] = useState<QuizState>("intro");
+type QuizState = "loading" | "intro" | "active" | "results";
+
+export default function QuizPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [quiz, setQuiz] = useState<QuizDetail | null>(null);
+  const [error, setError] = useState("");
+  const [state, setState] = useState<QuizState>("loading");
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showExplanation, setShowExplanation] = useState(false);
   const [timer, setTimer] = useState(0);
+
+  useEffect(() => {
+    async function fetchQuiz() {
+      try {
+        const res = await fetch(`/api/ai/quiz/${id}`);
+        if (!res.ok) throw new Error("Quiz not found");
+        const data = await res.json();
+        data.questions.sort((a: QuestionData, b: QuestionData) => a.order - b.order);
+        setQuiz(data);
+        setState("intro");
+      } catch {
+        setError("Failed to load quiz");
+        setState("intro");
+      }
+    }
+    fetchQuiz();
+  }, [id]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -79,13 +74,15 @@ export default function QuizPage() {
     return () => clearInterval(interval);
   }, [state]);
 
-  const question = mockQuestions[currentQ];
-  const progress = ((currentQ + 1) / mockQuestions.length) * 100;
+  const questions = quiz?.questions || [];
+  const question = questions[currentQ];
+  const progress = questions.length > 0 ? ((currentQ + 1) / questions.length) * 100 : 0;
   const isAnswered = answers[currentQ] !== undefined;
-  const isCorrect = answers[currentQ] === question?.answer;
+  const isCorrect = question ? answers[currentQ] === question.answer : false;
 
   const score = Object.entries(answers).reduce((acc, [idx, ans]) => {
-    return acc + (mockQuestions[Number(idx)].answer === ans ? 1 : 0);
+    const q = questions[Number(idx)];
+    return acc + (q && q.answer === ans ? 1 : 0);
   }, 0);
 
   const handleAnswer = (answer: string) => {
@@ -96,7 +93,7 @@ export default function QuizPage() {
 
   const nextQuestion = () => {
     setShowExplanation(false);
-    if (currentQ < mockQuestions.length - 1) {
+    if (currentQ < questions.length - 1) {
       setCurrentQ(currentQ + 1);
     } else {
       setState("results");
@@ -104,6 +101,32 @@ export default function QuizPage() {
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
+  if (state === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading quiz...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !quiz) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="text-center max-w-md w-full">
+          <CardContent className="p-8 space-y-4">
+            <p className="text-muted-foreground">{error || "Quiz not found"}</p>
+            <Link href="/quizzes">
+              <Button variant="gradient">Back to Quizzes</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (state === "intro") {
     return (
@@ -115,20 +138,20 @@ export default function QuizPage() {
                 <Sparkles className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">ML Fundamentals Quiz</h2>
-                <p className="text-muted-foreground mt-2">{mockQuestions.length} questions &middot; Medium difficulty</p>
+                <h2 className="text-xl font-bold">{quiz.title}</h2>
+                <p className="text-muted-foreground mt-2">{questions.length} questions &middot; {quiz.mode} difficulty</p>
               </div>
               <div className="flex justify-center gap-6 text-sm text-muted-foreground">
                 <div className="text-center">
-                  <div className="font-semibold text-foreground">{mockQuestions.length}</div>
+                  <div className="font-semibold text-foreground">{questions.length}</div>
                   Questions
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-foreground">~10 min</div>
+                  <div className="font-semibold text-foreground">~{Math.max(5, questions.length * 2)} min</div>
                   Duration
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-foreground">Medium</div>
+                  <div className="font-semibold text-foreground capitalize">{quiz.mode.toLowerCase()}</div>
                   Difficulty
                 </div>
               </div>
@@ -143,22 +166,18 @@ export default function QuizPage() {
   }
 
   if (state === "results") {
-    const percentage = Math.round((score / mockQuestions.length) * 100);
+    const percentage = Math.round((score / questions.length) * 100);
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full">
           <Card className="text-center overflow-hidden">
             <div className="bg-gradient-to-br from-violet-600 to-indigo-600 p-8 text-white">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", delay: 0.2 }}
-              >
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}>
                 <Trophy className="h-16 w-16 mx-auto mb-4" />
               </motion.div>
               <h2 className="text-2xl font-bold">Quiz Complete!</h2>
               <div className="text-5xl font-bold mt-4">{percentage}%</div>
-              <p className="opacity-80 mt-2">{score}/{mockQuestions.length} correct</p>
+              <p className="opacity-80 mt-2">{score}/{questions.length} correct</p>
             </div>
             <CardContent className="p-6 space-y-4">
               <div className="flex justify-center gap-6 text-sm">
@@ -171,7 +190,7 @@ export default function QuizPage() {
                   <div className="text-muted-foreground">Correct</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-red-600">{mockQuestions.length - score}</div>
+                  <div className="font-semibold text-red-600">{questions.length - score}</div>
                   <div className="text-muted-foreground">Wrong</div>
                 </div>
               </div>
@@ -180,9 +199,7 @@ export default function QuizPage() {
                   <RotateCcw className="mr-2 h-4 w-4" /> Retry
                 </Button>
                 <Link href="/quizzes" className="flex-1">
-                  <Button variant="gradient" className="w-full">
-                    Done
-                  </Button>
+                  <Button variant="gradient" className="w-full">Done</Button>
                 </Link>
               </div>
             </CardContent>
@@ -192,9 +209,17 @@ export default function QuizPage() {
     );
   }
 
+  if (!question) return null;
+
+  const rawOptions = Array.isArray(question.options) ? question.options : [];
+  const options: string[] = rawOptions.length > 0
+    ? rawOptions
+    : question.type === "TRUE_FALSE"
+      ? ["True", "False"]
+      : [];
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <Link href="/quizzes">
           <Button variant="ghost" size="sm">
@@ -207,14 +232,13 @@ export default function QuizPage() {
             {formatTime(timer)}
           </Badge>
           <Badge variant="secondary">
-            {currentQ + 1}/{mockQuestions.length}
+            {currentQ + 1}/{questions.length}
           </Badge>
         </div>
       </div>
 
       <Progress value={progress} className="h-2" />
 
-      {/* Question */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentQ}
@@ -226,12 +250,14 @@ export default function QuizPage() {
           <Card>
             <CardContent className="p-6 space-y-6">
               <div>
-                <Badge variant="secondary" className="mb-3">{question.type === "MCQ" ? "Multiple Choice" : "True / False"}</Badge>
+                <Badge variant="secondary" className="mb-3">
+                  {question.type === "MCQ" ? "Multiple Choice" : question.type === "TRUE_FALSE" ? "True / False" : question.type.replace("_", " ")}
+                </Badge>
                 <h3 className="text-lg font-semibold leading-relaxed">{question.question}</h3>
               </div>
 
               <div className="space-y-3">
-                {question.options?.map((option, idx) => {
+                {options.map((option, idx) => {
                   const optionKey = question.type === "MCQ" ? option.charAt(0) : option;
                   const selected = answers[currentQ] === optionKey;
                   const correct = question.answer === optionKey;
@@ -261,9 +287,8 @@ export default function QuizPage() {
                 })}
               </div>
 
-              {/* Explanation */}
               <AnimatePresence>
-                {showExplanation && (
+                {showExplanation && question.explanation && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -287,7 +312,7 @@ export default function QuizPage() {
 
               {isAnswered && (
                 <Button variant="gradient" className="w-full" onClick={nextQuestion}>
-                  {currentQ < mockQuestions.length - 1 ? (
+                  {currentQ < questions.length - 1 ? (
                     <>Next Question <ArrowRight className="ml-2 h-4 w-4" /></>
                   ) : (
                     <>See Results <Trophy className="ml-2 h-4 w-4" /></>

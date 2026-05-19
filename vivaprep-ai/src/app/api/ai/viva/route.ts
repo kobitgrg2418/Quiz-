@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(questions);
   } catch (error) {
     console.error("Viva generation error:", error);
-    const errorMessage = (error as any)?.message?.includes("OPENAI_API_KEY")
-      ? "OpenAI API key not configured. Please contact administrator."
+    const errorMessage = (error as any)?.message?.includes("GEMINI_API_KEY")
+      ? "Gemini API key not configured. Add GEMINI_API_KEY to .env."
       : "Failed to generate viva questions";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

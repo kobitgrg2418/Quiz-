@@ -1,22 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { FileText, Search, Upload, ChevronRight } from "lucide-react";
+import { FileText, Search, Upload, ChevronRight, Loader2 } from "lucide-react";
 import { PDFUpload } from "@/components/upload/pdf-upload";
 
-const mockDocuments = [
-  { id: "1", title: "Machine Learning Fundamentals", pages: 45, size: "2.4 MB", status: "ready", time: "2 hours ago", topics: ["ML", "Neural Networks"], quizzes: 3, sets: 2 },
-  { id: "2", title: "Data Structures & Algorithms", pages: 32, size: "1.8 MB", status: "ready", time: "1 day ago", topics: ["Arrays", "Trees"], quizzes: 5, sets: 4 },
-  { id: "3", title: "Organic Chemistry Chapter 5", pages: 28, size: "3.2 MB", status: "processing", time: "3 days ago", topics: ["Reactions"], quizzes: 0, sets: 0 },
-  { id: "4", title: "Operating Systems — Chapter 5", pages: 84, size: "4.2 MB", status: "ready", time: "5 days ago", topics: ["Scheduling", "Memory"], quizzes: 8, sets: 6 },
-];
+interface DocumentData {
+  id: string;
+  title: string;
+  fileName: string;
+  fileSize: number;
+  pageCount: number;
+  status: "PROCESSING" | "READY" | "FAILED";
+  createdAt: string;
+  topics: { id: string; name: string }[];
+  _count: { quizzes: number; flashcardSets: number };
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
+}
 
 export default function LecturesPage() {
   const [search, setSearch] = useState("");
   const [showUpload, setShowUpload] = useState(false);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = mockDocuments.filter((d) =>
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/documents");
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch documents:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  const handleUploadComplete = () => {
+    setShowUpload(false);
+    fetchDocuments();
+  };
+
+  const filtered = documents.filter((d) =>
     d.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -38,7 +85,7 @@ export default function LecturesPage() {
 
       {showUpload && (
         <div className="vp-card fade-up" style={{ marginBottom: 24 }}>
-          <PDFUpload onUploadComplete={() => setShowUpload(false)} />
+          <PDFUpload onUploadComplete={handleUploadComplete} />
         </div>
       )}
 
@@ -59,66 +106,87 @@ export default function LecturesPage() {
 
       {/* Document list */}
       <div className="vp-card" style={{ padding: 0 }}>
-        {filtered.map((doc, i, arr) => (
-          <Link
-            key={doc.id}
-            href={`/lectures/${doc.id}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              padding: "16px 20px",
-              borderBottom: i < arr.length - 1 ? "1px solid var(--vp-border)" : "none",
-              textDecoration: "none",
-              color: "inherit",
-              transition: "background 0.15s",
-            }}
-          >
-            <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 10,
-              background: "linear-gradient(135deg, #DC2626, #F87171)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}>
-              <FileText size={20} color="white" />
+        {loading ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 40, color: "var(--vp-text-3)" }}>
+            <Loader2 size={16} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
+            <span style={{ fontSize: 14 }}>Loading lectures...</span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--vp-text-3)" }}>
+            <FileText size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
+            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+              {search ? "No lectures match your search" : "No lectures yet"}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{doc.title}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--vp-text-3)" }}>
-                <span>{doc.pages} pages</span>
-                <span>·</span>
-                <span>{doc.size}</span>
-                <span>·</span>
-                <span>{doc.time}</span>
-              </div>
-              <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-                {doc.topics.map((t) => (
-                  <span key={t} className="chip" style={{ height: 20, fontSize: 10 }}>{t}</span>
-                ))}
-              </div>
+            <div style={{ fontSize: 13 }}>
+              {search ? "Try a different search term" : "Upload a PDF to get started"}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ textAlign: "right", fontSize: 11, color: "var(--vp-text-3)" }}>
-                <div>{doc.quizzes} quizzes · {doc.sets} sets</div>
-              </div>
-              <span className="chip" style={{
-                height: 22,
-                fontSize: 10,
-                background: doc.status === "processing" ? "rgba(245,158,11,0.15)" : "rgba(16,185,129,0.15)",
-                borderColor: doc.status === "processing" ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.3)",
-                color: doc.status === "processing" ? "#F59E0B" : "#10B981",
-              }}>
-                {doc.status === "processing" && <span className="dot dot-live" />}
-                {doc.status}
-              </span>
-              <ChevronRight size={16} style={{ color: "var(--vp-text-3)" }} />
-            </div>
-          </Link>
-        ))}
+          </div>
+        ) : (
+          filtered.map((doc, i, arr) => {
+            const status = doc.status.toLowerCase();
+            return (
+              <Link
+                key={doc.id}
+                href={`/lectures/${doc.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: "16px 20px",
+                  borderBottom: i < arr.length - 1 ? "1px solid var(--vp-border)" : "none",
+                  textDecoration: "none",
+                  color: "inherit",
+                  transition: "background 0.15s",
+                }}
+              >
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #DC2626, #F87171)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <FileText size={20} color="white" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{doc.title}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--vp-text-3)" }}>
+                    {doc.pageCount > 0 && <><span>{doc.pageCount} pages</span><span>·</span></>}
+                    <span>{formatFileSize(doc.fileSize)}</span>
+                    <span>·</span>
+                    <span>{timeAgo(doc.createdAt)}</span>
+                  </div>
+                  {doc.topics.length > 0 && (
+                    <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                      {doc.topics.map((t) => (
+                        <span key={t.id} className="chip" style={{ height: 20, fontSize: 10 }}>{t.name}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ textAlign: "right", fontSize: 11, color: "var(--vp-text-3)" }}>
+                    <div>{doc._count.quizzes} quizzes · {doc._count.flashcardSets} sets</div>
+                  </div>
+                  <span className="chip" style={{
+                    height: 22,
+                    fontSize: 10,
+                    background: status === "processing" ? "rgba(245,158,11,0.15)" : status === "failed" ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
+                    borderColor: status === "processing" ? "rgba(245,158,11,0.3)" : status === "failed" ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)",
+                    color: status === "processing" ? "#F59E0B" : status === "failed" ? "#EF4444" : "#10B981",
+                  }}>
+                    {status === "processing" && <span className="dot dot-live" />}
+                    {status}
+                  </span>
+                  <ChevronRight size={16} style={{ color: "var(--vp-text-3)" }} />
+                </div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );

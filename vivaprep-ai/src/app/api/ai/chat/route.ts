@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateStreamingCompletion } from "@/lib/openai";
+import { generateStreamingCompletion } from "@/lib/ai";
 import { searchChunks } from "@/services/ai/pdf-processor";
 import { CHAT_SYSTEM_PROMPT } from "@/services/ai/prompts";
 
@@ -35,13 +35,7 @@ export async function POST(req: NextRequest) {
     const relevantContext = await searchChunks(documentId, message, 5);
     const systemPrompt = CHAT_SYSTEM_PROMPT.replace("{context}", relevantContext);
 
-    const stream = await generateStreamingCompletion(systemPrompt, message);
-
-    let fullResponse = "";
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || "";
-      fullResponse += content;
-    }
+    const fullResponse = await generateStreamingCompletion(systemPrompt, message);
 
     await prisma.chatMessage.createMany({
       data: [
@@ -63,8 +57,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ response: fullResponse });
   } catch (error: any) {
     console.error("Chat error:", error);
-    const message = error?.message?.includes("OPENAI_API_KEY")
-      ? "OpenAI API key not configured. Add OPENAI_API_KEY to .env to enable AI chat."
+    const message = error?.message?.includes("GEMINI_API_KEY")
+      ? "Gemini API key not configured. Add GEMINI_API_KEY to .env to enable AI chat."
       : "Failed to process chat message";
     return NextResponse.json(
       { error: message },

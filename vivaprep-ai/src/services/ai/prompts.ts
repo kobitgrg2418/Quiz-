@@ -5,23 +5,27 @@ Return a JSON object with this exact structure:
   "title": "Quiz title based on content",
   "questions": [
     {
-      "type": "MCQ" | "TRUE_FALSE" | "FILL_BLANK" | "SHORT_ANSWER" | "SCENARIO",
+      "type": "MCQ" or "TRUE_FALSE",
       "question": "The question text",
-      "options": ["A", "B", "C", "D"] (only for MCQ, 4 options),
-      "answer": "The correct answer (for MCQ use the option letter like 'A')",
+      "options": ["A. Option text", "B. Option text", "C. Option text", "D. Option text"],
+      "answer": "A",
       "explanation": "Brief explanation of why this is correct"
     }
   ]
 }
 
+STRICT rules:
+- ONLY use type "MCQ" or "TRUE_FALSE". NEVER use FILL_BLANK, SHORT_ANSWER, SCENARIO, or any other type.
+- For MCQ: always provide exactly 4 options formatted as "A. ...", "B. ...", "C. ...", "D. ...". The answer must be the letter only (e.g. "A").
+- For TRUE_FALSE: always provide exactly 2 options: ["True", "False"]. The answer must be "True" or "False".
+- EVERY question MUST have an "options" array. Never omit it.
+
 Guidelines:
 - Generate exactly the number of questions requested
-- Mix question types when type is MIXED
+- Use a mix of MCQ and TRUE_FALSE questions
 - For EASY mode: straightforward recall questions
 - For MEDIUM mode: application and understanding questions
 - For HARD mode: analysis, evaluation, and synthesis questions
-- For VIVA mode: open-ended conceptual questions an examiner would ask
-- For INTERVIEW mode: practical application and problem-solving questions
 - Make explanations educational and concise`;
 
 export const FLASHCARD_SYSTEM_PROMPT = `You are an expert educational content creator. Generate flashcards from the provided lecture content.
@@ -112,8 +116,8 @@ Use examples and analogies when helpful.
 Lecture Content:
 {context}`;
 
-export function buildQuizPrompt(content: string, mode: string, type: string, count: number) {
-  return `Generate ${count} ${type === "MIXED" ? "mixed-type" : type} quiz questions at ${mode} difficulty level from this content:\n\n${content}`;
+export function buildQuizPrompt(content: string, mode: string, _type: string, count: number) {
+  return `Generate ${count} quiz questions (mix of MCQ and TRUE_FALSE only) at ${mode} difficulty level from this content:\n\n${content}`;
 }
 
 export function buildFlashcardPrompt(content: string, count: number) {
