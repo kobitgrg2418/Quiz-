@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { FileText, Search, Upload, ChevronRight, Loader2 } from "lucide-react";
 import { PDFUpload } from "@/components/upload/pdf-upload";
+import { timeAgo, formatFileSize } from "@/lib/format";
 
 interface DocumentData {
   id: string;
@@ -15,23 +16,6 @@ interface DocumentData {
   createdAt: string;
   topics: { id: string; name: string }[];
   _count: { quizzes: number; flashcardSets: number };
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
 export default function LecturesPage() {

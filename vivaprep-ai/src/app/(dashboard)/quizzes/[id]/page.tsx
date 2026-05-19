@@ -152,7 +152,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               </div>
               <div>
                 <h2 className="text-xl font-bold">{quiz.title}</h2>
-                <p className="text-muted-foreground mt-2">{questions.length} questions &middot; {quiz.mode} difficulty</p>
+                <p className="text-muted-foreground mt-2">{questions.length} questions &middot; {quiz.mode.charAt(0).toUpperCase() + quiz.mode.slice(1).toLowerCase()} difficulty</p>
               </div>
               <div className="flex justify-center gap-6 text-sm text-muted-foreground">
                 <div className="text-center">
@@ -164,7 +164,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
                   Duration
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-foreground capitalize">{quiz.mode.toLowerCase()}</div>
+                  <div className="font-semibold text-foreground capitalize">{quiz.mode.charAt(0).toUpperCase() + quiz.mode.slice(1).toLowerCase()}</div>
                   Difficulty
                 </div>
               </div>

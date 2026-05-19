@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { formatFileSize } from "@/lib/format";
 
 interface DocumentDetail {
   id: string;
@@ -45,12 +46,6 @@ const actions = [
   { id: "interview", label: "Interview Prep", icon: Briefcase, desc: "Create interview questions", color: "text-pink-600", bg: "bg-pink-100 dark:bg-pink-900/30", href: "/interview" },
   { id: "chat", label: "Chat with PDF", icon: MessageSquare, desc: "Ask questions about content", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30", href: null },
 ];
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}
 
 export default function LectureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

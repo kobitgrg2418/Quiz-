@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { timeAgo } from "@/lib/format";
 
 interface QuizData {
   id: string;
@@ -31,17 +32,6 @@ interface DocumentOption {
   id: string;
   title: string;
   status: string;
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
 export default function QuizzesPage() {
@@ -304,7 +294,7 @@ export default function QuizzesPage() {
                           style={{
                             position: "absolute", bottom: "100%", right: 0, zIndex: 50, minWidth: 150,
                             marginBottom: 4,
-                            background: "var(--vp-surface)", border: "1px solid var(--vp-border)",
+                            background: "var(--vp-surface-solid)", border: "1px solid var(--vp-border)",
                             borderRadius: 10, boxShadow: "0 8px 30px rgba(0,0,0,0.12)", overflow: "hidden",
                           }}
                         >
@@ -353,7 +343,7 @@ export default function QuizzesPage() {
           style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
           onClick={(e) => { if (e.target === e.currentTarget) setRenaming(null); }}
         >
-          <div style={{ background: "var(--vp-surface)", border: "1px solid var(--vp-border)", borderRadius: 16, padding: 24, width: 400, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+          <div style={{ background: "var(--vp-surface-solid)", border: "1px solid var(--vp-border)", borderRadius: 16, padding: 24, width: 400, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px" }}>Rename Quiz</h2>
             <input
               className="vp-input"
@@ -387,7 +377,7 @@ export default function QuizzesPage() {
           onClick={(e) => { if (e.target === e.currentTarget && !generating) setShowGenerate(false); }}
         >
           <div style={{
-            background: "var(--vp-surface)",
+            background: "var(--vp-surface-solid)",
             border: "1px solid var(--vp-border)",
             borderRadius: 16,
             padding: 24,

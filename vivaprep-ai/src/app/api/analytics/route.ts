@@ -32,8 +32,11 @@ export async function GET(req: NextRequest) {
 
     const averageScore =
       quizAttempts.length > 0
-        ? quizAttempts.reduce((acc, a) => acc + a.score, 0) /
-          quizAttempts.length
+        ? quizAttempts.reduce(
+            (acc, a) =>
+              acc + Math.round((a.score / Math.max(a.totalPoints, 1)) * 100),
+            0
+          ) / quizAttempts.length
         : 0;
 
     const totalStudyTime = studySessions.reduce(

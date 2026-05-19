@@ -198,7 +198,7 @@ export default function PricingPage() {
                         ${price === 0 ? "0" : price.toFixed(2)}
                       </span>
                       <span className="text-muted-foreground text-sm">
-                        /{billing === "monthly" ? "mo" : "mo"}
+                        /mo
                       </span>
                     </div>
                     {billing === "yearly" && price > 0 && (

@@ -248,10 +248,7 @@ export default function NotesPage() {
                     </Button>
                   </div>
                   <Badge className={`mt-3 ${modeColors[note.mode] || ""}`}>{note.mode}</Badge>
-                  <p className="text-sm text-muted-foreground mt-3 line-clamp-3 whitespace-pre-line">
-                    {note.content.slice(0, 200)}...
-                  </p>
-                  {expandedId === note.id && (
+                  {expandedId === note.id ? (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
@@ -259,6 +256,10 @@ export default function NotesPage() {
                     >
                       <p className="text-sm text-muted-foreground whitespace-pre-line">{note.content}</p>
                     </motion.div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-3 line-clamp-3 whitespace-pre-line">
+                      {note.content.slice(0, 200)}{note.content.length > 200 ? "..." : ""}
+                    </p>
                   )}
                   <div className="mt-4 pt-3 border-t border-border/50">
                     <span className="text-xs text-muted-foreground">

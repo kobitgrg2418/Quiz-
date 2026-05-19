@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Layers, Play, Sparkles, Loader2, FileText, X } from "lucide-react";
 import { toast } from "sonner";
+import { timeAgo } from "@/lib/format";
 
 interface FlashcardSetData {
   id: string;
@@ -18,17 +19,6 @@ interface DocumentOption {
   id: string;
   title: string;
   status: string;
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
 export default function FlashcardsPage() {
@@ -119,7 +109,7 @@ export default function FlashcardsPage() {
           <div style={{ fontSize: 13 }}>Generate flashcards from one of your lectures to get started</div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {sets.map((set, idx) => {
             const tone = tones[idx % tones.length];
             const cardCount = set.flashcards.length;
@@ -166,7 +156,7 @@ export default function FlashcardsPage() {
           style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
           onClick={(e) => { if (e.target === e.currentTarget && !generating) setShowGenerate(false); }}
         >
-          <div style={{ background: "var(--vp-surface)", border: "1px solid var(--vp-border)", borderRadius: 16, padding: 24, width: 440, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+          <div style={{ background: "var(--vp-surface-solid)", border: "1px solid var(--vp-border)", borderRadius: 16, padding: 24, width: 440, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Generate Flashcards</h2>

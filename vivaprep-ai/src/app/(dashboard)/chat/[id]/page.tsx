@@ -31,7 +31,22 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [docTitle, setDocTitle] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch document title
+  useEffect(() => {
+    async function loadDocTitle() {
+      try {
+        const res = await fetch(`/api/documents/${params.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDocTitle(data.title || "Document");
+        }
+      } catch {}
+    }
+    loadDocTitle();
+  }, [params.id]);
 
   // Load chat history on mount
   useEffect(() => {
@@ -138,7 +153,7 @@ export default function ChatPage() {
           <Sparkles className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h2 className="font-semibold">Chat with Document</h2>
+          <h2 className="font-semibold truncate max-w-xs">{docTitle || "Chat with Document"}</h2>
           <p className="text-xs text-muted-foreground">Ask questions about your lecture content</p>
         </div>
         <Badge variant="secondary" className="ml-auto">AI Powered</Badge>

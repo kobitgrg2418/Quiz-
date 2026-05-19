@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -19,6 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { timeAgo } from "@/lib/format";
 
 interface DashboardStats {
   documents: number;
@@ -36,9 +38,12 @@ interface RecentDoc {
 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [stats, setStats] = useState<DashboardStats>({ documents: 0, quizzes: 0, flashcardSets: 0, notes: 0 });
   const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const firstName = session?.user?.name?.split(" ")[0] || "there";
 
   useEffect(() => {
     async function load() {
@@ -96,9 +101,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">Welcome back, {firstName}!</h1>
           <p className="text-muted-foreground mt-1">
-            Welcome back! Here&apos;s your study overview.
+            Here&apos;s your study overview.
           </p>
         </div>
         <Link href="/lectures">
