@@ -14,6 +14,7 @@ import {
   Briefcase,
   Upload,
   MessageSquare,
+  CreditCard,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
@@ -29,6 +30,7 @@ const navItems = [
 ];
 
 const bottomItems = [
+  { href: "/pricing", label: "Pricing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -38,7 +40,9 @@ export function Sidebar() {
   return (
     <aside className="vp-sidebar">
       <div style={{ padding: "4px 4px 16px", borderBottom: "1px solid var(--vp-border)", marginBottom: 8 }}>
-        <Logo size="md" />
+        <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
+          <Logo size="md" />
+        </Link>
       </div>
 
       <div style={{ marginBottom: 8, padding: "0 4px" }}>

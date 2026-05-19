@@ -295,39 +295,49 @@ export default function QuizzesPage() {
                       <MoreVertical size={16} />
                     </button>
                     {menuOpen === quiz.id && (
-                      <div
-                        style={{
-                          position: "absolute", top: "100%", right: 0, zIndex: 50, minWidth: 150,
-                          background: "var(--vp-surface)", border: "1px solid var(--vp-border)",
-                          borderRadius: 10, boxShadow: "0 8px 30px rgba(0,0,0,0.12)", overflow: "hidden",
-                        }}
-                      >
-                        <button
-                          onClick={() => { setMenuOpen(null); setRenaming({ id: quiz.id, title: quiz.title }); }}
+                      <>
+                        <div
+                          style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                          onClick={() => setMenuOpen(null)}
+                        />
+                        <div
                           style={{
-                            display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
-                            fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "inherit", textAlign: "left",
+                            position: "absolute", bottom: "100%", right: 0, zIndex: 50, minWidth: 150,
+                            marginBottom: 4,
+                            background: "var(--vp-surface)", border: "1px solid var(--vp-border)",
+                            borderRadius: 10, boxShadow: "0 8px 30px rgba(0,0,0,0.12)", overflow: "hidden",
                           }}
-                          onMouseOver={(e) => (e.currentTarget.style.background = "var(--vp-surface-hi)")}
-                          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
                         >
-                          <Pencil size={14} /> Rename
-                        </button>
-                        <button
-                          onClick={() => handleDelete(quiz.id)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
-                            fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "#EF4444", textAlign: "left",
-                          }}
-                          onMouseOver={(e) => (e.currentTarget.style.background = "var(--vp-surface-hi)")}
-                          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-                        >
-                          <Trash2 size={14} /> Delete
-                        </button>
-                      </div>
+                          <button
+                            onClick={() => { setMenuOpen(null); setRenaming({ id: quiz.id, title: quiz.title }); }}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
+                              fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "inherit", textAlign: "left",
+                            }}
+                            onMouseOver={(e) => (e.currentTarget.style.background = "var(--vp-surface-hi)")}
+                            onMouseOut={(e) => (e.currentTarget.style.background = "none")}
+                          >
+                            <Pencil size={14} /> Rename
+                          </button>
+                          <button
+                            onClick={() => handleDelete(quiz.id)}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
+                              fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "#EF4444", textAlign: "left",
+                            }}
+                            onMouseOver={(e) => (e.currentTarget.style.background = "var(--vp-surface-hi)")}
+                            onMouseOut={(e) => (e.currentTarget.style.background = "none")}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
-                  <span className="vp-btn vp-btn-primary vp-btn-sm" onClick={(e) => e.stopPropagation()}>
+                  <span
+                    className="vp-btn vp-btn-primary vp-btn-sm"
+                    onClick={(e) => { e.stopPropagation(); router.push(`/quizzes/${quiz.id}`); }}
+                  >
                     <Play size={12} /> Start
                   </span>
                 </div>

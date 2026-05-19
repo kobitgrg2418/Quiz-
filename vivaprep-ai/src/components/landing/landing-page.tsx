@@ -722,37 +722,63 @@ export function LandingPage() {
                 color: "#10B981",
                 fontWeight: 600,
               }}>
-                Save 25%
+                Save 20%
               </span>
             </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 960, margin: "0 auto" }}>
             {[
               {
-                name: "Free",
+                name: "Basic",
+                desc: "Perfect for getting started",
                 price: "$0",
                 period: "forever",
-                features: ["5 PDF uploads", "50 quiz questions / month", "Basic flashcards", "Limited chat"],
-                cta: "Get started",
+                features: [
+                  "Upload up to 5 PDFs",
+                  "1 quiz generation per day",
+                  "2 flashcard sets per day",
+                  "Basic note summaries",
+                  "Community support",
+                ],
+                cta: "Get started free",
                 popular: false,
               },
               {
-                name: "Pro",
-                priceMonthly: "$12",
-                priceAnnual: "$9",
+                name: "Plus",
+                desc: "For serious students",
+                priceMonthly: "$9.99",
+                priceAnnual: "$7.99",
                 period: "/mo",
-                features: ["Unlimited uploads", "Unlimited quizzes", "Advanced flashcards with SR", "Unlimited AI chat", "Viva & Interview prep", "Analytics dashboard", "Export to PDF"],
-                cta: "Start free trial",
+                features: [
+                  "Upload up to 50 PDFs",
+                  "Unlimited quiz generations",
+                  "Unlimited flashcard sets",
+                  "All note styles",
+                  "Viva & interview prep",
+                  "Priority AI processing",
+                  "Email support",
+                ],
+                cta: "Upgrade to Plus",
                 popular: true,
               },
               {
-                name: "Team",
-                priceMonthly: "$24",
-                priceAnnual: "$18",
+                name: "Pro",
+                desc: "For power users & groups",
+                priceMonthly: "$19.99",
+                priceAnnual: "$15.99",
                 period: "/mo",
-                features: ["Everything in Pro", "5 team members", "Collaborative study rooms", "Shared flashcard sets", "Priority support", "Admin dashboard"],
-                cta: "Contact sales",
+                features: [
+                  "Unlimited PDF uploads",
+                  "Unlimited everything",
+                  "All note styles + custom prompts",
+                  "Fastest AI processing",
+                  "Advanced analytics & insights",
+                  "Export to PDF/Word/Anki",
+                  "Team collaboration (up to 10)",
+                  "Priority 24/7 support",
+                ],
+                cta: "Upgrade to Pro",
                 popular: false,
               },
             ].map((plan) => (
@@ -781,12 +807,20 @@ export function LandingPage() {
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
                   {plan.name}
                 </h3>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 12, marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: "var(--vp-text-3)", marginBottom: 12 }}>
+                  {plan.desc}
+                </p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}>
                   <span style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 700, letterSpacing: "-0.03em" }}>
                     {"priceMonthly" in plan ? (billingAnnual ? plan.priceAnnual : plan.priceMonthly) : plan.price}
                   </span>
                   <span style={{ color: "var(--vp-text-3)", fontSize: 13 }}>{plan.period}</span>
                 </div>
+                {billingAnnual && "priceMonthly" in plan && (
+                  <p style={{ fontSize: 11, color: "var(--vp-text-3)", marginTop: -16, marginBottom: 16 }}>
+                    ${(parseFloat(plan.priceAnnual!.replace("$", "")) * 12).toFixed(2)} billed yearly
+                  </p>
+                )}
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, marginBottom: 24 }}>
                   {plan.features.map((f) => (
                     <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--vp-text-2)", padding: "6px 0" }}>
@@ -795,12 +829,13 @@ export function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <button
+                <Link
+                  href="/register"
                   className={plan.popular ? "vp-btn vp-btn-primary" : "vp-btn vp-btn-ghost"}
-                  style={{ width: "100%", justifyContent: "center" }}
+                  style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
                 >
                   {plan.cta} <ArrowRight size={14} />
-                </button>
+                </Link>
               </div>
             ))}
           </div>
