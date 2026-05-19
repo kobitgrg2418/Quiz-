@@ -1,377 +1,220 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   FileText,
   BrainCircuit,
   Layers,
   Upload,
   ArrowRight,
-  Sparkles,
-  Cpu,
-  Globe,
-  Zap,
-  Flame,
-  Target,
-  Brain,
-  ChevronRight,
-  Plus,
-  Play,
-  Mic,
+  Loader2,
   StickyNote,
+  GraduationCap,
+  Briefcase,
   MessageSquare,
+  Plus,
 } from "lucide-react";
-import { Sparkline } from "@/components/ui/sparkline";
-import { AIOrb } from "@/components/ui/ai-orb";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+interface DashboardStats {
+  documents: number;
+  quizzes: number;
+  flashcardSets: number;
+  notes: number;
+}
+
+interface RecentDoc {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  _count: { quizzes: number; flashcardSets: number };
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats>({ documents: 0, quizzes: 0, flashcardSets: 0, notes: 0 });
+  const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [docsRes, quizzesRes, flashcardsRes, notesRes] = await Promise.all([
+          fetch("/api/documents"),
+          fetch("/api/ai/quiz"),
+          fetch("/api/ai/flashcards"),
+          fetch("/api/notes"),
+        ]);
+
+        const docs = docsRes.ok ? await docsRes.json() : [];
+        const quizzes = quizzesRes.ok ? await quizzesRes.json() : [];
+        const flashcards = flashcardsRes.ok ? await flashcardsRes.json() : [];
+        const notes = notesRes.ok ? await notesRes.json() : [];
+
+        setStats({
+          documents: docs.length,
+          quizzes: quizzes.length,
+          flashcardSets: flashcards.length,
+          notes: notes.length,
+        });
+        setRecentDocs(docs.slice(0, 5));
+      } catch {}
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const statCards = [
+    { label: "Lectures", value: stats.documents, icon: FileText, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30", href: "/lectures" },
+    { label: "Quizzes", value: stats.quizzes, icon: BrainCircuit, color: "text-violet-600", bg: "bg-violet-100 dark:bg-violet-900/30", href: "/quizzes" },
+    { label: "Flashcard Sets", value: stats.flashcardSets, icon: Layers, color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30", href: "/flashcards" },
+    { label: "Notes", value: stats.notes, icon: StickyNote, color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/30", href: "/notes" },
+  ];
+
+  const quickActions = [
+    { label: "Upload Lecture", icon: Upload, href: "/lectures", desc: "Upload a PDF to get started" },
+    { label: "Generate Quiz", icon: BrainCircuit, href: "/quizzes", desc: "Create quiz from your lectures" },
+    { label: "Create Flashcards", icon: Layers, href: "/flashcards", desc: "Auto-generate study flashcards" },
+    { label: "Key Points", icon: StickyNote, href: "/lectures", desc: "Extract important concepts" },
+    { label: "Viva Prep", icon: GraduationCap, href: "/viva", desc: "Practice oral exam questions" },
+    { label: "Interview Prep", icon: Briefcase, href: "/interview", desc: "Prepare for interviews" },
+  ];
+
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 32,
-            fontWeight: 700,
-            letterSpacing: "-0.025em",
-            margin: 0,
-          }}>
-            Good afternoon.
-          </h1>
-          <p style={{ color: "var(--vp-text-2)", margin: "6px 0 0", fontSize: 14 }}>
-            You have <strong style={{ color: "var(--vp-text)" }}>3 quizzes due today</strong> and{" "}
-            <strong style={{ color: "var(--vp-text)" }}>1 viva scheduled</strong>.
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome back! Here&apos;s your study overview.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Link href="/lectures" className="vp-btn vp-btn-ghost" style={{ textDecoration: "none" }}>
-            <Upload size={14} /> Upload PDF
-          </Link>
-          <Link href="/quizzes" className="vp-btn vp-btn-primary" style={{ textDecoration: "none" }}>
-            <Sparkles size={14} /> Resume study
-          </Link>
-        </div>
+        <Link href="/lectures">
+          <Button variant="gradient">
+            <Plus className="mr-2 h-4 w-4" /> Upload PDF
+          </Button>
+        </Link>
       </div>
 
-      {/* KPI Strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
-        {[
-          { label: "Mastery score", value: "84", delta: "+6", unit: "%", icon: Target, trend: [60,62,68,65,72,78,84] },
-          { label: "Study streak", value: "27", delta: "+1", unit: " days", icon: Flame, trend: [10,15,18,20,22,25,27] },
-          { label: "Questions answered", value: "1,284", delta: "+147", icon: BrainCircuit, trend: [800,900,950,1050,1100,1180,1284] },
-          { label: "Concepts learned", value: "342", delta: "+23", icon: Brain, trend: [200,230,270,290,310,325,342] },
-        ].map((kpi) => (
-          <div key={kpi.label} className="vp-card" style={{ padding: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--vp-text-2)", fontWeight: 500 }}>
-                <kpi.icon size={14} style={{ color: "var(--vp-text-3)" }} />
-                {kpi.label}
-              </div>
-              <div style={{
-                fontSize: 11,
-                padding: "2px 6px",
-                borderRadius: 6,
-                background: "rgba(16,185,129,0.12)",
-                color: "#10B981",
-                fontWeight: 600,
-              }}>
-                {kpi.delta}
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em" }}>
-                {kpi.value}
-              </span>
-              {kpi.unit && <span style={{ color: "var(--vp-text-3)", fontSize: 13 }}>{kpi.unit}</span>}
-            </div>
-            <Sparkline data={kpi.trend} width={220} height={28} />
-          </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+          >
+            <Link href={stat.href}>
+              <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.bg}`}>
+                      <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">{stat.value}</div>
+                      <div className="text-sm text-muted-foreground">{stat.label}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </motion.div>
         ))}
       </div>
 
-      {/* Main grid: Continue learning + Due today */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 16 }}>
-        {/* Continue Learning */}
-        <div className="vp-card" style={{ padding: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em" }}>
-                Continue where you left off
-              </div>
-              <div style={{ fontSize: 12, color: "var(--vp-text-3)", marginTop: 2 }}>
-                3 active study sets · last opened 12m ago
-              </div>
-            </div>
-            <Link href="/lectures" className="vp-btn vp-btn-soft vp-btn-sm" style={{ textDecoration: "none" }}>
-              View all <ArrowRight size={12} />
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Recent Lectures</h2>
+            <Link href="/lectures">
+              <Button variant="ghost" size="sm">
+                View all <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
             </Link>
           </div>
-          <div style={{ borderTop: "1px solid var(--vp-border)" }}>
-            {[
-              { title: "Operating Systems — Chapter 5", sub: "Process Scheduling · 47 concepts", progress: 68, due: "3 quizzes due", icon: Cpu, tone: "purple" },
-              { title: "Computer Networks — TCP/IP Deep Dive", sub: "Transport layer · 32 concepts", progress: 42, due: "Viva in 2h", icon: Globe, tone: "cyan" },
-              { title: "Algorithms — Dynamic Programming", sub: "Optimal substructure · 28 concepts", progress: 91, due: "Review tomorrow", icon: Zap, tone: "blue" },
-            ].map((item, i, arr) => (
-              <Link
-                key={item.title}
-                href="/quizzes"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  padding: "16px 20px",
-                  borderBottom: i < arr.length - 1 ? "1px solid var(--vp-border)" : "none",
-                  textDecoration: "none",
-                  color: "inherit",
-                  transition: "background 0.15s",
-                }}
+          {recentDocs.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>No lectures yet. Upload a PDF to get started.</p>
+                <Link href="/lectures">
+                  <Button variant="gradient" className="mt-4">
+                    <Upload className="mr-2 h-4 w-4" /> Upload PDF
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {recentDocs.map((doc, i) => (
+                <motion.div
+                  key={doc.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Link href={`/lectures/${doc.id}`}>
+                    <Card className="hover:shadow-md transition-all cursor-pointer">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30 shrink-0">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{doc.title}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={doc.status === "READY" ? "success" : doc.status === "FAILED" ? "destructive" : "secondary"} className="text-xs">
+                              {doc.status.toLowerCase()}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {doc._count.quizzes} quizzes · {doc._count.flashcardSets} flashcard sets
+                            </span>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map((action, i) => (
+              <motion.div
+                key={action.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
               >
-                <div style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  background: item.tone === "purple" ? "linear-gradient(135deg, #7C3AED, #A855F7)" :
-                              item.tone === "cyan" ? "linear-gradient(135deg, #06B6D4, #0EA5E9)" :
-                                                      "linear-gradient(135deg, #3B82F6, #6366F1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <item.icon size={20} color="white" />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{item.title}</div>
-                  <div style={{ fontSize: 12, color: "var(--vp-text-3)" }}>{item.sub}</div>
-                  <div className="vp-progress" style={{ marginTop: 10, height: 4 }}>
-                    <div className="vp-progress-fill" style={{ width: item.progress + "%" }} />
-                  </div>
-                </div>
-                <div style={{ minWidth: 90, textAlign: "right" }}>
-                  <div style={{ fontFamily: "var(--font-mono-vp)", fontSize: 13, fontWeight: 600 }}>{item.progress}%</div>
-                  <div style={{ fontSize: 11, color: "var(--vp-text-3)", marginTop: 2 }}>{item.due}</div>
-                </div>
-                <ChevronRight size={16} style={{ color: "var(--vp-text-3)" }} />
-              </Link>
+                <Link href={action.href}>
+                  <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer h-full">
+                    <CardContent className="p-4">
+                      <action.icon className="h-5 w-5 text-violet-600 mb-2" />
+                      <h3 className="font-semibold text-sm">{action.label}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{action.desc}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
             ))}
           </div>
-        </div>
-
-        {/* Due Today */}
-        <div className="vp-card" style={{ padding: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em" }}>
-                Due today
-              </div>
-              <div style={{ fontSize: 12, color: "var(--vp-text-3)", marginTop: 2 }}>
-                4 sessions · est. 1h 40m
-              </div>
-            </div>
-            <button className="vp-btn vp-btn-ghost vp-btn-icon vp-btn-sm">
-              <Plus size={14} />
-            </button>
-          </div>
-          <div style={{ borderTop: "1px solid var(--vp-border)" }}>
-            {[
-              { time: "14:30", title: "Process Scheduling", kind: "Quiz · 12 Q", icon: BrainCircuit, accent: "#7C3AED" },
-              { time: "16:00", title: "TCP Congestion Control", kind: "Viva · 8 Q", icon: Mic, accent: "#06B6D4" },
-              { time: "19:00", title: "DP — Knapsack", kind: "Flashcards · 24", icon: Layers, accent: "#3B82F6" },
-              { time: "Late", title: "Memory Management", kind: "Notes review", icon: StickyNote, accent: "#A855F7" },
-            ].map((item, i, arr) => (
-              <div key={item.title} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "14px 20px",
-                borderBottom: i < arr.length - 1 ? "1px solid var(--vp-border)" : "none",
-              }}>
-                <div style={{ fontFamily: "var(--font-mono-vp)", fontSize: 12, color: "var(--vp-text-2)", width: 40 }}>
-                  {item.time}
-                </div>
-                <div style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  background: `color-mix(in srgb, ${item.accent} 18%, transparent)`,
-                  border: `1px solid color-mix(in srgb, ${item.accent} 30%, transparent)`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <item.icon size={13} style={{ color: item.accent }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{item.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--vp-text-3)", marginTop: 1 }}>{item.kind}</div>
-                </div>
-                <button className="vp-btn vp-btn-ghost vp-btn-icon vp-btn-sm">
-                  <Play size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom row: Mastery + AI Recommendation */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
-        {/* Mastery by Topic */}
-        <div className="vp-card">
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 4 }}>
-            Mastery by topic
-          </div>
-          <div style={{ fontSize: 11, color: "var(--vp-text-3)", marginBottom: 16 }}>Last 7 days</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {[
-              { name: "Process Scheduling", v: 92, c: "#10B981" },
-              { name: "Memory Management", v: 78, c: "#06B6D4" },
-              { name: "File Systems", v: 64, c: "#3B82F6" },
-              { name: "TCP / IP", v: 51, c: "#A855F7" },
-              { name: "Concurrency & Locking", v: 38, c: "#EC4899" },
-              { name: "Distributed Systems", v: 22, c: "#F59E0B" },
-            ].map((t, i) => (
-              <div key={t.name}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-                  <span style={{ color: "var(--vp-text-2)" }}>{t.name}</span>
-                  <span style={{ fontFamily: "var(--font-mono-vp)", fontWeight: 600 }}>{t.v}%</span>
-                </div>
-                <div style={{ height: 4, borderRadius: 4, background: "var(--vp-surface-hi)", overflow: "hidden" }}>
-                  <div style={{
-                    height: "100%",
-                    width: t.v + "%",
-                    background: t.c,
-                    borderRadius: 4,
-                    transition: "width 0.8s var(--ease)",
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Study Heatmap placeholder */}
-        <div className="vp-card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em" }}>Study heatmap</div>
-              <div style={{ fontSize: 11, color: "var(--vp-text-3)", marginTop: 2 }}>84 sessions in 12 weeks</div>
-            </div>
-            <span className="chip chip-grad">
-              <Flame size={12} /> 27-day streak
-            </span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 3 }}>
-            {Array.from({ length: 12 }).map((_, w) => (
-              <div key={w} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                {Array.from({ length: 7 }).map((_, d) => {
-                  const seed = (w * 7 + d) * 1.3;
-                  const v = Math.max(0, Math.min(4, Math.round(Math.sin(seed) * 2 + 2 + w / 6)));
-                  const colors = ["var(--vp-surface-hi)", "rgba(124,58,237,0.25)", "rgba(124,58,237,0.5)", "rgba(124,58,237,0.75)", "rgba(124,58,237,1)"];
-                  return (
-                    <div key={d} style={{
-                      aspectRatio: "1",
-                      background: colors[v],
-                      borderRadius: 3,
-                      border: "1px solid var(--vp-border)",
-                    }} />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 11, color: "var(--vp-text-3)" }}>
-            <span>12 weeks ago</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span>Less</span>
-              {["var(--vp-surface-hi)", "rgba(124,58,237,0.25)", "rgba(124,58,237,0.5)", "rgba(124,58,237,0.75)", "rgba(124,58,237,1)"].map((c, i) => (
-                <span key={i} style={{ width: 10, height: 10, background: c, borderRadius: 2, border: "1px solid var(--vp-border)" }} />
-              ))}
-              <span>More</span>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Recommendation */}
-        <div className="vp-card" style={{ padding: 0, overflow: "hidden", position: "relative" }}>
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(circle at 100% 0%, rgba(124,58,237,0.3), transparent 50%)",
-            pointerEvents: "none",
-          }} />
-          <div style={{ padding: 20, position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <AIOrb size={20} />
-              <span style={{ fontSize: 11, color: "var(--vp-text-2)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                AI study plan
-              </span>
-            </div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.3, marginBottom: 8 }}>
-              You&apos;re weakest on <span className="grad-text">TCP congestion control</span>.
-            </div>
-            <div style={{ fontSize: 13, color: "var(--vp-text-2)", lineHeight: 1.5, marginBottom: 16 }}>
-              Based on yesterday&apos;s quiz (51% accuracy), I&apos;ve generated a 25-minute focused review.
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-              {["7 weakest concepts", "12 spaced-repetition flashcards", "3-question follow-up quiz"].map((s) => (
-                <div key={s} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--vp-text-2)" }}>
-                  <span style={{ color: "var(--grad-1)" }}>✓</span>
-                  {s}
-                </div>
-              ))}
-            </div>
-            <Link
-              href="/quizzes"
-              className="vp-btn vp-btn-primary vp-btn-sm"
-              style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
-            >
-              Start AI session <ArrowRight size={12} />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="vp-card" style={{ padding: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em" }}>
-            Recent activity
-          </div>
-          <button className="vp-btn vp-btn-soft vp-btn-sm">View all</button>
-        </div>
-        <div style={{ borderTop: "1px solid var(--vp-border)", padding: "8px 0" }}>
-          {[
-            { t: "12m ago", a: "Generated quiz from", s: "OS — Chapter 5.pdf", icon: Sparkles },
-            { t: "34m ago", a: "Completed flashcard review", s: "DP — 24 cards · 91% accuracy", icon: Layers },
-            { t: "1h ago", a: "Asked AI", s: '"Why does RR have higher overhead than SJF?"', icon: MessageSquare },
-            { t: "2h ago", a: "Uploaded", s: "TCP-IP Deep Dive.pdf · 84 pages", icon: Upload },
-            { t: "Yesterday", a: "Finished mock viva", s: "Memory Management · score 78/100", icon: Mic },
-          ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px" }}>
-              <div style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: "var(--vp-surface-hi)",
-                border: "1px solid var(--vp-border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                <item.icon size={13} style={{ color: "var(--vp-text-2)" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13 }}>
-                  <span style={{ color: "var(--vp-text-2)" }}>{item.a}</span>{" "}
-                  <span style={{ fontWeight: 500 }}>{item.s}</span>
-                </div>
-              </div>
-              <div style={{ fontFamily: "var(--font-mono-vp)", fontSize: 11, color: "var(--vp-text-3)" }}>{item.t}</div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

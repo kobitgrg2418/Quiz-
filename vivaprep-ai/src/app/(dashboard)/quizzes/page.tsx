@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   BrainCircuit,
@@ -230,9 +229,8 @@ export default function QuizzesPage() {
               const bestScore = bestAttempt ? Math.round((bestAttempt.score / Math.max(bestAttempt.totalPoints, 1)) * 100) : null;
 
               return (
-                <Link
+                <div
                   key={quiz.id}
-                  href={`/quizzes/${quiz.id}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -242,7 +240,9 @@ export default function QuizzesPage() {
                     textDecoration: "none",
                     color: "inherit",
                     transition: "background 0.15s",
+                    cursor: "pointer",
                   }}
+                  onClick={() => router.push(`/quizzes/${quiz.id}`)}
                 >
                   <div style={{
                     width: 44,
@@ -284,9 +284,9 @@ export default function QuizzesPage() {
                     </div>
                   )}
                   {/* Actions Menu */}
-                  <div style={{ position: "relative" }} onClick={(e) => e.preventDefault()}>
+                  <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === quiz.id ? null : quiz.id); }}
+                      onClick={() => setMenuOpen(menuOpen === quiz.id ? null : quiz.id)}
                       style={{
                         background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 6,
                         color: "var(--vp-text-3)", display: "flex", alignItems: "center",
@@ -303,7 +303,7 @@ export default function QuizzesPage() {
                         }}
                       >
                         <button
-                          onClick={(e) => { e.stopPropagation(); setMenuOpen(null); setRenaming({ id: quiz.id, title: quiz.title }); }}
+                          onClick={() => { setMenuOpen(null); setRenaming({ id: quiz.id, title: quiz.title }); }}
                           style={{
                             display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
                             fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "inherit", textAlign: "left",
@@ -314,7 +314,7 @@ export default function QuizzesPage() {
                           <Pencil size={14} /> Rename
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(quiz.id); }}
+                          onClick={() => handleDelete(quiz.id)}
                           style={{
                             display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px",
                             fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "#EF4444", textAlign: "left",
@@ -327,10 +327,10 @@ export default function QuizzesPage() {
                       </div>
                     )}
                   </div>
-                  <span className="vp-btn vp-btn-primary vp-btn-sm">
+                  <span className="vp-btn vp-btn-primary vp-btn-sm" onClick={(e) => e.stopPropagation()}>
                     <Play size={12} /> Start
                   </span>
-                </Link>
+                </div>
               );
             })
           )}
