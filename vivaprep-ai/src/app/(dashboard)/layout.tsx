@@ -1,25 +1,17 @@
-"use client";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      <div className="page-bg" />
-      <div className="app-shell">
-        <Sidebar />
-        <div className="main-area">
-          <Header />
-          <div className="screen-body">
-            {children}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  return <DashboardShell>{children}</DashboardShell>;
 }
