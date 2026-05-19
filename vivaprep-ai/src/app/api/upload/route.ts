@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { processPDF } from "@/services/ai/pdf-processor";
 import { rateLimit, UPLOAD_RATE_LIMIT } from "@/lib/rate-limit";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+// Vercel Hobby plan has 4.5MB body limit
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+
+// Allow longer execution for PDF processing
+export const maxDuration = 60; // 60 seconds (max for Hobby plan)
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File size exceeds 100MB limit" },
+        { error: "File size exceeds 4MB limit" },
         { status: 400 }
       );
     }
@@ -61,26 +65,24 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    processPDF(buffer, document.id)
-      .then(async () => {
-        await prisma.document.update({
-          where: { id: document.id },
-          data: { status: "READY" },
-        });
-      })
-      .catch(async (err) => {
-        console.error("PDF processing failed:", err);
-        await prisma.document.update({
-          where: { id: document.id },
-          data: { status: "FAILED" },
-        });
+    // Process synchronously — Vercel kills background tasks after response is sent
+    try {
+      await processPDF(buffer, document.id);
+    } catch (err) {
+      console.error("PDF processing failed:", err);
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { status: "FAILED" },
       });
+    }
 
-    return NextResponse.json({
-      id: document.id,
-      title: document.title,
-      status: document.status,
+    // Fetch updated status
+    const updated = await prisma.document.findUnique({
+      where: { id: document.id },
+      select: { id: true, title: true, status: true },
     });
+
+    return NextResponse.json(updated);
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(
