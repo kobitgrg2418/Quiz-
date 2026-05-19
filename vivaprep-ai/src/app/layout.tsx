@@ -27,6 +27,10 @@ export const metadata: Metadata = {
     "interview prep",
     "lecture notes",
   ],
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
 };
 
 export default function RootLayout({
