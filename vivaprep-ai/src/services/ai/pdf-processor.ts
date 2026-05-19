@@ -1,3 +1,27 @@
+// Polyfill DOMMatrix for serverless environments (Vercel) where DOM APIs don't exist
+if (typeof globalThis.DOMMatrix === "undefined") {
+  // @ts-expect-error minimal stub — pdf-parse/pdfjs only needs the constructor for text extraction
+  globalThis.DOMMatrix = class DOMMatrix {
+    m: number[] = [1, 0, 0, 1, 0, 0];
+    constructor(init?: string | number[]) {
+      if (Array.isArray(init)) this.m = init;
+    }
+    get a() { return this.m[0]; }
+    get b() { return this.m[1]; }
+    get c() { return this.m[2]; }
+    get d() { return this.m[3]; }
+    get e() { return this.m[4]; }
+    get f() { return this.m[5]; }
+    get is2D() { return true; }
+    get isIdentity() { return true; }
+    inverse() { return new DOMMatrix(); }
+    multiply() { return new DOMMatrix(); }
+    scale() { return new DOMMatrix(); }
+    translate() { return new DOMMatrix(); }
+    transformPoint() { return { x: 0, y: 0, z: 0, w: 1 }; }
+  };
+}
+
 import { PDFParse } from "pdf-parse";
 import { generateEmbedding } from "@/lib/ai";
 import { prisma } from "@/lib/prisma";
