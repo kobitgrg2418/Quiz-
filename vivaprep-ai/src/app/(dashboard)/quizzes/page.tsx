@@ -65,7 +65,8 @@ export default function QuizzesPage() {
     try {
       const res = await fetch("/api/documents");
       if (res.ok) {
-        const docs = await res.json();
+        const json = await res.json();
+        const docs = Array.isArray(json) ? json : json.data || [];
         setDocuments(docs.filter((d: DocumentOption) => d.status === "READY"));
       }
     } catch (err) {

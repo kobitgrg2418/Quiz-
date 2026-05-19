@@ -64,7 +64,10 @@ export default function VivaPage() {
   useEffect(() => {
     fetch("/api/documents")
       .then((r) => r.json())
-      .then((docs) => setDocuments(docs.filter((d: DocumentOption) => d.status === "READY")))
+      .then((json) => {
+        const docs = Array.isArray(json) ? json : json.data || [];
+        setDocuments(docs.filter((d: DocumentOption) => d.status === "READY"));
+      })
       .catch(() => {});
   }, []);
 
