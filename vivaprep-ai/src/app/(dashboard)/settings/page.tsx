@@ -26,11 +26,23 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+interface UserPreferences {
+  dailyGoal?: string;
+  quizDifficulty?: string;
+  autoGenerateFlashcards?: boolean;
+  showExplanations?: boolean;
+  notifQuiz?: boolean;
+  notifStreak?: boolean;
+  notifContent?: boolean;
+  notifEmail?: boolean;
+}
+
 interface UserProfile {
   id: string;
   name: string | null;
   email: string;
   image: string | null;
+  preferences: UserPreferences | null;
   createdAt: string;
 }
 
@@ -213,6 +225,9 @@ export default function SettingsPage() {
 
   useEffect(() => setMounted(true), []);
 
+  // Track saving preferences
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -225,11 +240,43 @@ export default function SettingsPage() {
         setProfile(data);
         setName(data.name || "");
         setEmail(data.email || "");
+        // Load saved preferences
+        const prefs = data.preferences as UserPreferences | null;
+        if (prefs) {
+          if (prefs.dailyGoal) setDailyGoal(prefs.dailyGoal);
+          if (prefs.quizDifficulty) setQuizDifficulty(prefs.quizDifficulty);
+          if (prefs.autoGenerateFlashcards !== undefined) setAutoGenerateFlashcards(prefs.autoGenerateFlashcards);
+          if (prefs.showExplanations !== undefined) setShowExplanations(prefs.showExplanations);
+          if (prefs.notifQuiz !== undefined) setNotifQuiz(prefs.notifQuiz);
+          if (prefs.notifStreak !== undefined) setNotifStreak(prefs.notifStreak);
+          if (prefs.notifContent !== undefined) setNotifContent(prefs.notifContent);
+          if (prefs.notifEmail !== undefined) setNotifEmail(prefs.notifEmail);
+        }
       }
     } catch {
       toast.error("Failed to load profile");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function savePreferences(prefs: UserPreferences) {
+    setSavingPrefs(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferences: prefs }),
+      });
+      if (res.ok) {
+        toast.success("Preferences saved!");
+      } else {
+        toast.error("Failed to save preferences");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setSavingPrefs(false);
     }
   }
 
@@ -823,6 +870,25 @@ export default function SettingsPage() {
                   <Toggle checked={showExplanations} onChange={setShowExplanations} />
                 </SettingRow>
               </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 16, borderTop: "1px solid var(--vp-border)", marginTop: 8 }}>
+                <button
+                  className="vp-btn vp-btn-primary vp-btn-sm"
+                  disabled={savingPrefs}
+                  onClick={() => savePreferences({ dailyGoal, quizDifficulty, autoGenerateFlashcards, showExplanations })}
+                >
+                  {savingPrefs ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} />
+                      Save Preferences
+                    </>
+                  )}
+                </button>
+              </div>
             </SectionCard>
           )}
 
@@ -845,6 +911,25 @@ export default function SettingsPage() {
                 <SettingRow label="Email notifications" description="Receive weekly study progress reports via email" border={false}>
                   <Toggle checked={notifEmail} onChange={setNotifEmail} />
                 </SettingRow>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 16, borderTop: "1px solid var(--vp-border)", marginTop: 8 }}>
+                <button
+                  className="vp-btn vp-btn-primary vp-btn-sm"
+                  disabled={savingPrefs}
+                  onClick={() => savePreferences({ notifQuiz, notifStreak, notifContent, notifEmail })}
+                >
+                  {savingPrefs ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} />
+                      Save Notifications
+                    </>
+                  )}
+                </button>
               </div>
             </SectionCard>
           )}

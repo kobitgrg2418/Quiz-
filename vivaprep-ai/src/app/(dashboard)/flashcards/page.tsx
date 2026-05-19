@@ -34,7 +34,10 @@ export default function FlashcardsPage() {
   const fetchSets = useCallback(async () => {
     try {
       const res = await fetch("/api/ai/flashcards");
-      if (res.ok) setSets(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        setSets(Array.isArray(json) ? json : json.data || []);
+      }
     } catch (err) {
       console.error("Failed to fetch flashcard sets:", err);
     } finally {

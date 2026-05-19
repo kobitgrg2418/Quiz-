@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "better-sqlite3"],
+  serverExternalPackages: ["pdf-parse"],
   allowedDevOrigins: ["http://127.0.0.1:3000", "http://localhost:3000"],
   images: {
     remotePatterns: [

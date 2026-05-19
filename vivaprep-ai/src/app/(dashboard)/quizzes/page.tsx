@@ -51,7 +51,8 @@ export default function QuizzesPage() {
     try {
       const res = await fetch("/api/ai/quiz");
       if (res.ok) {
-        setQuizzes(await res.json());
+        const json = await res.json();
+        setQuizzes(Array.isArray(json) ? json : json.data || []);
       }
     } catch (err) {
       console.error("Failed to fetch quizzes:", err);

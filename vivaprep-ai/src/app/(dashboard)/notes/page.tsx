@@ -65,7 +65,8 @@ export default function NotesPage() {
     try {
       const res = await fetch("/api/notes");
       if (res.ok) {
-        setNotes(await res.json());
+        const json = await res.json();
+        setNotes(Array.isArray(json) ? json : json.data || []);
       }
     } catch {}
   };

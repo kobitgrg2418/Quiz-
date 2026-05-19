@@ -17,6 +17,7 @@ export async function GET() {
       name: true,
       email: true,
       image: true,
+      preferences: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -37,9 +38,14 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, email, currentPassword, newPassword } = body;
+  const { name, email, currentPassword, newPassword, preferences } = body;
 
-  const updateData: Record<string, string> = {};
+  const updateData: Record<string, unknown> = {};
+
+  // Update preferences if provided
+  if (preferences !== undefined) {
+    updateData.preferences = preferences;
+  }
 
   if (name !== undefined) {
     updateData.name = name.trim();

@@ -3,12 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateInterviewQuestions } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = rateLimit(`ai:${session.user.id}`, AI_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
     }
 
     const { documentId } = await req.json();

@@ -3,24 +3,38 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateFlashcards } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sets = await prisma.flashcardSet.findMany({
-      where: { userId: session.user.id },
-      include: {
-        document: { select: { title: true } },
-        flashcards: { select: { id: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const url = req.nextUrl;
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json(sets);
+    const [sets, total] = await Promise.all([
+      prisma.flashcardSet.findMany({
+        where: { userId: session.user.id },
+        include: {
+          document: { select: { title: true } },
+          flashcards: { select: { id: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.flashcardSet.count({ where: { userId: session.user.id } }),
+    ]);
+
+    return NextResponse.json({
+      data: sets,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     console.error("Flashcard list error:", error);
     return NextResponse.json({ error: "Failed to fetch flashcards" }, { status: 500 });
@@ -32,6 +46,14 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = rateLimit(`ai:${session.user.id}`, AI_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
     }
 
     const { documentId, count = 15 } = await req.json();

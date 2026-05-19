@@ -28,8 +28,9 @@ export default function LecturesPage() {
     try {
       const res = await fetch("/api/documents");
       if (res.ok) {
-        const data = await res.json();
-        setDocuments(data);
+        const json = await res.json();
+        // Support both paginated ({ data: [...] }) and flat array responses
+        setDocuments(Array.isArray(json) ? json : json.data || []);
       }
     } catch (err) {
       console.error("Failed to fetch documents:", err);

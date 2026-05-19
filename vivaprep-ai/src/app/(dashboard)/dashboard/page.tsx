@@ -55,16 +55,22 @@ export default function DashboardPage() {
           fetch("/api/notes"),
         ]);
 
-        const docs = docsRes.ok ? await docsRes.json() : [];
-        const quizzes = quizzesRes.ok ? await quizzesRes.json() : [];
-        const flashcards = flashcardsRes.ok ? await flashcardsRes.json() : [];
-        const notes = notesRes.ok ? await notesRes.json() : [];
+        const docsJson = docsRes.ok ? await docsRes.json() : [];
+        const quizzesJson = quizzesRes.ok ? await quizzesRes.json() : [];
+        const flashcardsJson = flashcardsRes.ok ? await flashcardsRes.json() : [];
+        const notesJson = notesRes.ok ? await notesRes.json() : [];
+
+        // Handle both paginated ({ data, pagination }) and flat array responses
+        const docs = Array.isArray(docsJson) ? docsJson : docsJson.data || [];
+        const quizzes = Array.isArray(quizzesJson) ? quizzesJson : quizzesJson.data || [];
+        const flashcards = Array.isArray(flashcardsJson) ? flashcardsJson : flashcardsJson.data || [];
+        const notes = Array.isArray(notesJson) ? notesJson : notesJson.data || [];
 
         setStats({
-          documents: docs.length,
-          quizzes: quizzes.length,
-          flashcardSets: flashcards.length,
-          notes: notes.length,
+          documents: docsJson.pagination?.total ?? docs.length,
+          quizzes: quizzesJson.pagination?.total ?? quizzes.length,
+          flashcardSets: flashcardsJson.pagination?.total ?? flashcards.length,
+          notes: notesJson.pagination?.total ?? notes.length,
         });
         setRecentDocs(docs.slice(0, 5));
       } catch {}

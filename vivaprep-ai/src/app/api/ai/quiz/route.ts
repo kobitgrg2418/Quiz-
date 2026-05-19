@@ -4,34 +4,50 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, QuizMode, QuizType, QuestionType } from "@/generated/prisma/client";
 import { generateQuiz } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
 const VALID_MODES = Object.values(QuizMode);
 const VALID_TYPES = Object.values(QuizType);
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const quizzes = await prisma.quiz.findMany({
-      where: {
-        document: { userId: session.user.id },
-      },
-      include: {
-        document: { select: { title: true } },
-        questions: { select: { id: true } },
-        attempts: {
-          where: { userId: session.user.id },
-          select: { score: true, totalPoints: true },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const url = req.nextUrl;
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json(quizzes);
+    const [quizzes, total] = await Promise.all([
+      prisma.quiz.findMany({
+        where: {
+          document: { userId: session.user.id },
+        },
+        include: {
+          document: { select: { title: true } },
+          questions: { select: { id: true } },
+          attempts: {
+            where: { userId: session.user.id },
+            select: { score: true, totalPoints: true },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.quiz.count({
+        where: { document: { userId: session.user.id } },
+      }),
+    ]);
+
+    return NextResponse.json({
+      data: quizzes,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     console.error("Quiz list error:", error);
     return NextResponse.json({ error: "Failed to fetch quizzes" }, { status: 500 });
@@ -43,6 +59,14 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = rateLimit(`ai:${session.user.id}`, AI_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
     }
 
     const { documentId, mode = "MEDIUM", type = "MIXED", count = 10 } = await req.json();

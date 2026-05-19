@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const rl = rateLimit(`auth:${ip}`, AUTH_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Too many attempts. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     if (!email || !password || !name) {

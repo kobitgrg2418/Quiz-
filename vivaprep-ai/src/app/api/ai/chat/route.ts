@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateStreamingCompletion } from "@/lib/ai";
 import { searchChunks } from "@/services/ai/pdf-processor";
 import { CHAT_SYSTEM_PROMPT } from "@/services/ai/prompts";
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,6 +47,14 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = rateLimit(`ai:${session.user.id}`, AI_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
     }
 
     const { documentId, message } = await req.json();

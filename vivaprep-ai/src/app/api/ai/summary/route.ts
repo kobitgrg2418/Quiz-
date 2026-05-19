@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { NoteMode } from "@/generated/prisma/client";
 import { generateSummary } from "@/services/ai/generators";
 import { getDocumentContext } from "@/services/ai/pdf-processor";
+import { rateLimit, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
 const VALID_MODES = Object.values(NoteMode);
 
@@ -12,6 +13,14 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = rateLimit(`ai:${session.user.id}`, AI_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
     }
 
     const { documentId, mode = "CONCISE" } = await req.json();

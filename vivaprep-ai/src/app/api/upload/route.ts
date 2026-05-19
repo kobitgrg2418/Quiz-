@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { processPDF } from "@/services/ai/pdf-processor";
+import { rateLimit, UPLOAD_RATE_LIMIT } from "@/lib/rate-limit";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -12,6 +13,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "You must be signed in to upload" },
         { status: 401 }
+      );
+    }
+
+    const rl = rateLimit(`upload:${session.user.id}`, UPLOAD_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Upload rate limit exceeded. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
       );
     }
 

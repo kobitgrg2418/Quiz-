@@ -3,10 +3,20 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { encode } from "next-auth/jwt";
+import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
+
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const rl = rateLimit(`auth:${ip}`, AUTH_RATE_LIMIT);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `Too many login attempts. Try again in ${rl.resetInSeconds}s` },
+        { status: 429 }
+      );
+    }
 
     if (!email || !password) {
       return NextResponse.json(

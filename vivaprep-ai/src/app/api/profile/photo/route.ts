@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import path from "path";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "avatars");
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 2 * 1024 * 1024; // 2MB for base64 (keeps DB rows reasonable)
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-// POST /api/profile/photo — upload profile photo
+// POST /api/profile/photo — upload profile photo as base64 data URL
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -31,40 +28,19 @@ export async function POST(req: NextRequest) {
 
   if (file.size > MAX_SIZE) {
     return NextResponse.json(
-      { error: "File too large. Max 5MB" },
+      { error: "File too large. Max 2MB" },
       { status: 400 }
     );
   }
 
   try {
-    // Ensure upload directory exists
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-    // Delete old avatar if it's a local file
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { image: true },
-    });
-
-    if (currentUser?.image?.startsWith("/uploads/avatars/")) {
-      const oldPath = path.join(process.cwd(), "public", currentUser.image);
-      await unlink(oldPath).catch(() => {});
-    }
-
-    // Save new file
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${session.user.id}-${Date.now()}.${ext}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filepath, buffer);
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    const imageUrl = `/uploads/avatars/${filename}`;
-
-    // Update user record
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: { image: imageUrl },
+      data: { image: dataUrl },
       select: { id: true, image: true },
     });
 
@@ -83,17 +59,6 @@ export async function DELETE() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { image: true },
-  });
-
-  // Delete local file if exists
-  if (user?.image?.startsWith("/uploads/avatars/")) {
-    const filepath = path.join(process.cwd(), "public", user.image);
-    await unlink(filepath).catch(() => {});
   }
 
   await prisma.user.update({
