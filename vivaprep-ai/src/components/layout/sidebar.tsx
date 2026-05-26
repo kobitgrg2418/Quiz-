@@ -15,6 +15,7 @@ import {
   Upload,
   MessageSquare,
   CreditCard,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
@@ -34,15 +35,29 @@ const bottomItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="vp-sidebar">
-      <div style={{ padding: "4px 4px 16px", borderBottom: "1px solid var(--vp-border)", marginBottom: 8 }}>
-        <Link href="/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
+    <aside className={`vp-sidebar ${isOpen ? "open" : ""}`}>
+      <div style={{ padding: "4px 4px 16px", borderBottom: "1px solid var(--vp-border)", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Link href="/dashboard" style={{ textDecoration: "none", color: "inherit" }} onClick={onClose}>
           <Logo size="md" />
         </Link>
+        {/* Mobile close button */}
+        <button
+          className="mobile-menu-btn"
+          onClick={onClose}
+          aria-label="Close menu"
+          style={{ border: "none", background: "none", padding: 4 }}
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <div style={{ marginBottom: 8, padding: "0 4px" }}>
@@ -50,6 +65,7 @@ export function Sidebar() {
           href="/lectures"
           className="vp-btn vp-btn-primary vp-btn-sm"
           style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
+          onClick={onClose}
         >
           <Upload size={14} />
           Upload PDF
@@ -65,11 +81,12 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={`vp-sidebar-link ${isActive ? "active" : ""}`}
+              onClick={onClose}
             >
               <Icon size={18} />
               <span style={{ flex: 1 }}>{item.label}</span>
               {item.shortcut && (
-                <span style={{
+                <span className="sidebar-shortcut" style={{
                   fontFamily: "var(--font-mono-vp)",
                   fontSize: 11,
                   color: "var(--vp-text-3)",
@@ -95,6 +112,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={`vp-sidebar-link ${isActive ? "active" : ""}`}
+              onClick={onClose}
             >
               <Icon size={18} />
               <span>{item.label}</span>

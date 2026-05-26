@@ -20,6 +20,7 @@ import {
   StickyNote,
   Loader2,
   X,
+  Menu,
 } from "lucide-react";
 
 const mockNotifications = [
@@ -34,7 +35,11 @@ interface SearchResult {
   type: "document" | "quiz" | "flashcard" | "note";
 }
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const router = useRouter();
@@ -221,8 +226,17 @@ export function Header() {
 
   return (
     <header className="vp-topbar">
+      {/* Mobile hamburger */}
+      <button
+        className="mobile-menu-btn"
+        onClick={onMenuClick}
+        aria-label="Open menu"
+      >
+        <Menu size={18} />
+      </button>
+
       {/* Search Bar */}
-      <div ref={searchRef} style={{ position: "relative", flex: 1, maxWidth: 480 }}>
+      <div ref={searchRef} className="search-desktop" style={{ position: "relative", flex: 1, maxWidth: 480 }}>
         <Search
           size={14}
           style={{
@@ -400,7 +414,7 @@ export function Header() {
           </button>
 
           {showNotifications && (
-            <div style={{
+            <div className="notif-dropdown" style={{
               position: "absolute",
               top: "calc(100% + 8px)",
               right: 0,

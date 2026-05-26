@@ -142,22 +142,22 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-border/50">
+      <div className="flex items-center gap-2 sm:gap-3 pb-4 border-b border-border/50">
         <Link href="/lectures">
-          <Button variant="ghost" size="icon" className="rounded-xl">
+          <Button variant="ghost" size="icon" className="rounded-xl shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600">
-          <Sparkles className="h-5 w-5 text-white" />
+        <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shrink-0">
+          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
         </div>
-        <div>
-          <h2 className="font-semibold truncate max-w-xs">{docTitle || "Chat with Document"}</h2>
-          <p className="text-xs text-muted-foreground">Ask questions about your lecture content</p>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold truncate text-sm sm:text-base">{docTitle || "Chat with Document"}</h2>
+          <p className="text-xs text-muted-foreground hidden sm:block">Ask questions about your lecture content</p>
         </div>
-        <Badge variant="secondary" className="ml-auto">AI Powered</Badge>
+        <Badge variant="secondary" className="ml-auto shrink-0 hidden sm:inline-flex">AI Powered</Badge>
       </div>
 
       {/* Messages */}

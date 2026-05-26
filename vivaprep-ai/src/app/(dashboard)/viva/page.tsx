@@ -160,7 +160,7 @@ export default function VivaPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Viva Preparation</h1>
           <p className="text-muted-foreground mt-1">
@@ -268,7 +268,7 @@ export default function VivaPage() {
           </TabsContent>
 
           <TabsContent value="practice" className="mt-6">
-            <Card className="h-[500px] flex flex-col">
+            <Card className="h-[calc(100vh-16rem)] sm:h-[500px] flex flex-col">
               <CardHeader className="border-b">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600">

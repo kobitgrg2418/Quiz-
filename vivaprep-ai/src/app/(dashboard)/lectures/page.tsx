@@ -85,6 +85,7 @@ export default function LecturesPage() {
     <div>
       {/* Header */}
       <div
+        className="page-header-row"
         style={{
           display: "flex",
           alignItems: "center",
@@ -130,7 +131,7 @@ export default function LecturesPage() {
       )}
 
       {/* Search */}
-      <div style={{ position: "relative", maxWidth: 400, marginBottom: 20 }}>
+      <div style={{ position: "relative", maxWidth: 400, marginBottom: 20, width: "100%" }}>
         <Search
           size={14}
           style={{
@@ -207,6 +208,7 @@ export default function LecturesPage() {
               <Link
                 key={doc.id}
                 href={`/lectures/${doc.id}`}
+                className="lecture-list-item"
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
@@ -335,6 +337,7 @@ export default function LecturesPage() {
 
                 {/* Right side: stats + status */}
                 <div
+                  className="lecture-right-col"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -345,6 +348,7 @@ export default function LecturesPage() {
                 >
                   {totalContent > 0 && (
                     <div
+                      className="lecture-stats-text"
                       style={{
                         textAlign: "right",
                         fontSize: 11,

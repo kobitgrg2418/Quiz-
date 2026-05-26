@@ -151,7 +151,7 @@ export default function QuizzesPage() {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+      <div className="page-header-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, letterSpacing: "-0.025em", margin: 0 }}>
             Quizzes
@@ -166,7 +166,7 @@ export default function QuizzesPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="stat-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         {[
           { label: "Total Quizzes", value: String(totalQuizzes), icon: BrainCircuit, accent: "#7C3AED" },
           { label: "Average Score", value: `${avgScore}%`, icon: Target, accent: "#10B981" },
@@ -223,6 +223,7 @@ export default function QuizzesPage() {
               return (
                 <div
                   key={quiz.id}
+                  className="quiz-list-item"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -267,7 +268,7 @@ export default function QuizzesPage() {
                     </div>
                   </div>
                   {bestScore !== null && (
-                    <div style={{ textAlign: "right", marginRight: 8 }}>
+                    <div className="quiz-score-col" style={{ textAlign: "right", marginRight: 8 }}>
                       <div style={{ fontFamily: "var(--font-mono-vp)", fontSize: 16, fontWeight: 700 }}>{bestScore}%</div>
                       <div className="vp-progress" style={{ width: 80, height: 3, marginTop: 6 }}>
                         <div className="vp-progress-fill" style={{ width: bestScore + "%" }} />
@@ -327,7 +328,7 @@ export default function QuizzesPage() {
                     )}
                   </div>
                   <span
-                    className="vp-btn vp-btn-primary vp-btn-sm"
+                    className="vp-btn vp-btn-primary vp-btn-sm quiz-start-btn"
                     onClick={(e) => { e.stopPropagation(); router.push(`/quizzes/${quiz.id}`); }}
                   >
                     <Play size={12} /> Start
