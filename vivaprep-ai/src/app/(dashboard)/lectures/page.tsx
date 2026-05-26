@@ -64,7 +64,7 @@ export default function LecturesPage() {
           </p>
         </div>
         <button className="vp-btn vp-btn-primary" onClick={() => setShowUpload(!showUpload)}>
-          <Upload size={14} /> Upload PDF
+          <Upload size={14} /> Upload Document
         </button>
       </div>
 
@@ -103,7 +103,7 @@ export default function LecturesPage() {
               {search ? "No lectures match your search" : "No lectures yet"}
             </div>
             <div style={{ fontSize: 13 }}>
-              {search ? "Try a different search term" : "Upload a PDF to get started"}
+              {search ? "Try a different search term" : "Upload a PDF, PPTX, or Markdown file to get started"}
             </div>
           </div>
         ) : (

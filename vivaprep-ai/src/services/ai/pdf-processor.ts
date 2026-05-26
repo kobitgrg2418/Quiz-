@@ -1,4 +1,5 @@
 import pdf from "pdf-parse";
+import { parseOffice } from "officeparser";
 import { generateEmbedding } from "@/lib/ai";
 import { prisma } from "@/lib/prisma";
 
@@ -9,9 +10,15 @@ export async function processPDF(
   buffer: Buffer,
   documentId: string
 ): Promise<{ text: string; pageCount: number }> {
-  const data = await pdf(buffer);
-  const text = data.text;
-  const pageCount = data.numpages;
+  return processDocument(buffer, documentId, "application/pdf");
+}
+
+export async function processDocument(
+  buffer: Buffer,
+  documentId: string,
+  mimeType: string
+): Promise<{ text: string; pageCount: number }> {
+  const { text, pageCount } = await extractText(buffer, mimeType);
 
   await prisma.document.update({
     where: { id: documentId },
@@ -42,7 +49,6 @@ export async function processPDF(
     });
   }
 
-  // Detect topics — gracefully falls back if no OpenAI key
   const topics = await detectTopics(text);
   for (const topic of topics) {
     await prisma.topic.create({
@@ -56,6 +62,33 @@ export async function processPDF(
   });
 
   return { text, pageCount };
+}
+
+async function extractText(
+  buffer: Buffer,
+  mimeType: string
+): Promise<{ text: string; pageCount: number }> {
+  if (mimeType === "application/pdf") {
+    const data = await pdf(buffer);
+    return { text: data.text, pageCount: data.numpages };
+  }
+
+  if (
+    mimeType ===
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ) {
+    const ast = await parseOffice(buffer);
+    const text = ast.toText();
+    const slideCount = ast.metadata?.pages ?? (text.match(/\n{2,}/g) || []).length + 1;
+    return { text, pageCount: slideCount };
+  }
+
+  if (mimeType === "text/markdown" || mimeType === "text/plain") {
+    const text = buffer.toString("utf-8");
+    return { text, pageCount: 1 };
+  }
+
+  throw new Error(`Unsupported file type: ${mimeType}`);
 }
 
 function chunkText(text: string): { content: string; page: number }[] {

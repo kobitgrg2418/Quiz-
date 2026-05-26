@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, FileText, Presentation, FileCode2, X, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatFileSize } from "@/lib/utils";
@@ -26,8 +26,8 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       for (const file of acceptedFiles) {
-        if (file.size > 100 * 1024 * 1024) {
-          toast.error(`${file.name} exceeds 100MB limit`);
+        if (file.size > 4 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 4MB limit`);
           continue;
         }
 
@@ -97,8 +97,13 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "application/pdf": [".pdf"] },
-    maxSize: 100 * 1024 * 1024,
+    accept: {
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+      "text/markdown": [".md"],
+      "text/plain": [".md"],
+    },
+    maxSize: 4 * 1024 * 1024,
   });
 
   const removeFile = (file: File) => {
@@ -122,10 +127,10 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
           </div>
           <div>
             <p className="text-sm font-medium">
-              {isDragActive ? "Drop your PDF here" : "Drag & drop your PDF here"}
+              {isDragActive ? "Drop your file here" : "Drag & drop your file here"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              or click to browse. PDF only, max 100MB
+              or click to browse. PDF, PPTX, or Markdown, max 4MB
             </p>
           </div>
         </div>
@@ -140,8 +145,18 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
             exit={{ opacity: 0, y: -10 }}
             className="flex items-center gap-3 rounded-xl border border-border/50 bg-card p-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-              <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+              f.file.name.endsWith(".pptx") ? "bg-orange-100 dark:bg-orange-900/30" :
+              f.file.name.endsWith(".md") ? "bg-blue-100 dark:bg-blue-900/30" :
+              "bg-red-100 dark:bg-red-900/30"
+            }`}>
+              {f.file.name.endsWith(".pptx") ? (
+                <Presentation className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              ) : f.file.name.endsWith(".md") ? (
+                <FileCode2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              ) : (
+                <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{f.file.name}</p>
