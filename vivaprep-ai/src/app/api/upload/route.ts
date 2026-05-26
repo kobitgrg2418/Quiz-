@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { processDocument } from "@/services/ai/pdf-processor";
 import { rateLimit, UPLOAD_RATE_LIMIT } from "@/lib/rate-limit";
 import { sanitizeInput, safeError, logSecurityEvent } from "@/lib/security";
+import { cleanDocumentTitle } from "@/lib/format";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
 
@@ -137,9 +138,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const title = sanitizeInput(
-      fileName.replace(/\.(pdf|pptx|md)$/i, "").replace(/[-_]/g, " ")
-    );
+    const title = sanitizeInput(cleanDocumentTitle(fileName));
 
     const document = await prisma.document.create({
       data: {

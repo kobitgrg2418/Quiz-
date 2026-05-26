@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { formatFileSize } from "@/lib/format";
+import { formatFileSize, cleanDocumentTitle } from "@/lib/format";
 
 interface DocumentDetail {
   id: string;
@@ -156,13 +156,13 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{doc.title}</h1>
+          <h1 className="text-2xl font-bold">{cleanDocumentTitle(doc.title)}</h1>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant={doc.status === "READY" ? "success" : doc.status === "FAILED" ? "destructive" : "secondary"}>
               {doc.status.toLowerCase()}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {doc.pageCount > 0 && `${doc.pageCount} pages · `}{formatFileSize(doc.fileSize)} · {new Date(doc.createdAt).toLocaleDateString()}
+              {doc.pageCount > 0 && `${doc.pageCount} ${doc.pageCount === 1 ? "page" : "pages"} · `}{formatFileSize(doc.fileSize)} · {new Date(doc.createdAt).toLocaleDateString()}
             </span>
           </div>
         </div>
