@@ -20,7 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { timeAgo } from "@/lib/format";
+import { timeAgo, cleanDocumentTitle } from "@/lib/format";
 
 interface DashboardStats {
   documents: number;
@@ -95,7 +95,7 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { label: "Upload Lecture", icon: Upload, href: "/lectures", desc: "Upload a PDF to get started" },
+    { label: "Upload Lecture", icon: Upload, href: "/lectures", desc: "Upload a PDF, PPTX, or Markdown" },
     { label: "Generate Quiz", icon: BrainCircuit, href: "/quizzes", desc: "Create quiz from your lectures" },
     { label: "Create Flashcards", icon: Layers, href: "/flashcards", desc: "Auto-generate study flashcards" },
     { label: "Key Points", icon: StickyNote, href: "/lectures", desc: "Extract important concepts" },
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         </div>
         <Link href="/lectures">
           <Button variant="gradient">
-            <Plus className="mr-2 h-4 w-4" /> Upload PDF
+            <Plus className="mr-2 h-4 w-4" /> Upload Document
           </Button>
         </Link>
       </div>
@@ -160,10 +160,10 @@ export default function DashboardPage() {
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p>No lectures yet. Upload a PDF to get started.</p>
+                <p>No lectures yet. Upload a document to get started.</p>
                 <Link href="/lectures">
                   <Button variant="gradient" className="mt-4">
-                    <Upload className="mr-2 h-4 w-4" /> Upload PDF
+                    <Upload className="mr-2 h-4 w-4" /> Upload Document
                   </Button>
                 </Link>
               </CardContent>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                           <FileText className="h-5 w-5 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{doc.title}</div>
+                          <div className="font-medium text-sm truncate">{cleanDocumentTitle(doc.title)}</div>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant={doc.status === "READY" ? "success" : doc.status === "FAILED" ? "destructive" : "secondary"} className="text-xs">
                               {doc.status.toLowerCase()}

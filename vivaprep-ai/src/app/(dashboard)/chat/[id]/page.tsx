@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cleanDocumentTitle } from "@/lib/format";
 
 interface Message {
   id: string;
@@ -41,7 +42,7 @@ export default function ChatPage() {
         const res = await fetch(`/api/documents/${params.id}`);
         if (res.ok) {
           const data = await res.json();
-          setDocTitle(data.title || "Document");
+          setDocTitle(cleanDocumentTitle(data.title || "Document"));
         }
       } catch {}
     }

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { cleanDocumentTitle } from "@/lib/format";
 
 interface NoteItem {
   id: string;
@@ -164,7 +165,7 @@ export default function NotesPage() {
                   <SelectContent>
                     {documents.map((doc) => (
                       <SelectItem key={doc.id} value={doc.id}>
-                        {doc.title}
+                        {cleanDocumentTitle(doc.title)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -239,7 +240,7 @@ export default function NotesPage() {
                       <h3 className="font-semibold text-sm truncate">{note.title}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <FileText className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground truncate">{note.document.title}</span>
+                        <span className="text-xs text-muted-foreground truncate">{cleanDocumentTitle(note.document.title)}</span>
                       </div>
                     </div>
                     <Button

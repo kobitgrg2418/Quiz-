@@ -16,7 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { timeAgo } from "@/lib/format";
+import { timeAgo, cleanDocumentTitle } from "@/lib/format";
 
 interface QuizData {
   id: string;
@@ -263,7 +263,7 @@ export default function QuizzesPage() {
                       </span>
                     </div>
                     <div style={{ fontSize: 12, color: "var(--vp-text-3)" }}>
-                      {quiz.document.title} · {quiz.questions.length} questions · {timeAgo(quiz.createdAt)}
+                      {cleanDocumentTitle(quiz.document.title)} · {quiz.questions.length} {quiz.questions.length === 1 ? "question" : "questions"} · {timeAgo(quiz.createdAt)}
                     </div>
                   </div>
                   {bestScore !== null && (
@@ -406,7 +406,7 @@ export default function QuizzesPage() {
                 <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Select Lecture</label>
                 {documents.length === 0 ? (
                   <div style={{ fontSize: 13, color: "var(--vp-text-3)", padding: "12px 0" }}>
-                    No lectures available. Upload a PDF first.
+                    No lectures available. Upload a document first.
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflowY: "auto" }}>
@@ -431,7 +431,7 @@ export default function QuizzesPage() {
                         }}
                       >
                         <FileText size={14} style={{ color: "#DC2626", flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cleanDocumentTitle(doc.title)}</span>
                       </button>
                     ))}
                   </div>

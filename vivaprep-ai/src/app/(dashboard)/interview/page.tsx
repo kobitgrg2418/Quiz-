@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { cleanDocumentTitle } from "@/lib/format";
 
 interface InterviewData {
   technical: { question: string; expectedAnswer: string }[];
@@ -116,7 +117,7 @@ export default function InterviewPage() {
                 <SelectContent>
                   {documents.map((doc) => (
                     <SelectItem key={doc.id} value={doc.id}>
-                      {doc.title}
+                      {cleanDocumentTitle(doc.title)}
                     </SelectItem>
                   ))}
                 </SelectContent>

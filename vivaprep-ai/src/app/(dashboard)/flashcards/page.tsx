@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Layers, Play, Sparkles, Loader2, FileText, X } from "lucide-react";
 import { toast } from "sonner";
-import { timeAgo } from "@/lib/format";
+import { timeAgo, cleanDocumentTitle } from "@/lib/format";
 
 interface FlashcardSetData {
   id: string;
@@ -132,7 +132,7 @@ export default function FlashcardsPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 15, fontWeight: 600 }}>{set.title}</div>
-                      <div style={{ fontSize: 12, color: "var(--vp-text-3)" }}>{set.document.title}</div>
+                      <div style={{ fontSize: 12, color: "var(--vp-text-3)" }}>{cleanDocumentTitle(set.document.title)}</div>
                     </div>
                   </div>
                   <div style={{ marginBottom: 16, fontSize: 13, color: "var(--vp-text-3)" }}>
@@ -175,7 +175,7 @@ export default function FlashcardsPage() {
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Select Lecture</label>
                 {documents.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--vp-text-3)", padding: "12px 0" }}>No lectures available. Upload a PDF first.</div>
+                  <div style={{ fontSize: 13, color: "var(--vp-text-3)", padding: "12px 0" }}>No lectures available. Upload a document first.</div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflowY: "auto" }}>
                     {documents.map((doc) => (
@@ -186,7 +186,7 @@ export default function FlashcardsPage() {
                         cursor: "pointer", textAlign: "left", fontSize: 13, fontWeight: selectedDoc === doc.id ? 600 : 400, color: "inherit", width: "100%",
                       }}>
                         <FileText size={14} style={{ color: "#DC2626", flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cleanDocumentTitle(doc.title)}</span>
                       </button>
                     ))}
                   </div>

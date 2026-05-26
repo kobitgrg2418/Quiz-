@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { cleanDocumentTitle } from "@/lib/format";
 
 interface VivaQuestions {
   basic: string[];
@@ -184,7 +185,7 @@ export default function VivaPage() {
                 <SelectContent>
                   {documents.map((doc) => (
                     <SelectItem key={doc.id} value={doc.id}>
-                      {doc.title}
+                      {cleanDocumentTitle(doc.title)}
                     </SelectItem>
                   ))}
                 </SelectContent>
