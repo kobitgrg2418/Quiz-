@@ -60,35 +60,42 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
 
           clearInterval(progressInterval);
 
-          if (res.ok) {
-            const data = await res.json();
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || "Upload failed");
+          }
+
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.file === file
+                ? { ...f, progress: 100, status: "processing", documentId: data.id }
+                : f
+            )
+          );
+
+          // Check if server already marked it as FAILED during processing
+          if (data.status === "FAILED") {
+            throw new Error("Document processing failed");
+          }
+
+          setTimeout(() => {
             setFiles((prev) =>
               prev.map((f) =>
-                f.file === file
-                  ? { ...f, progress: 100, status: "processing", documentId: data.id }
-                  : f
+                f.file === file ? { ...f, status: "done" } : f
               )
             );
-
-            setTimeout(() => {
-              setFiles((prev) =>
-                prev.map((f) =>
-                  f.file === file ? { ...f, status: "done" } : f
-                )
-              );
-              onUploadComplete?.(data.id);
-              toast.success(`${file.name} processed successfully!`);
-            }, 2000);
-          } else {
-            throw new Error("Upload failed");
-          }
-        } catch {
+            onUploadComplete?.(data.id);
+            toast.success(`${file.name} processed successfully!`);
+          }, 2000);
+        } catch (err) {
           setFiles((prev) =>
             prev.map((f) =>
               f.file === file ? { ...f, status: "error" } : f
             )
           );
-          toast.error(`Failed to upload ${file.name}`);
+          const message = err instanceof Error ? err.message : "Upload failed";
+          toast.error(`${file.name}: ${message}`);
         }
       }
     },
@@ -100,6 +107,10 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
     accept: {
       "application/pdf": [".pdf"],
       "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+      // Browsers may report .pptx as these generic types instead:
+      "application/octet-stream": [".pptx"],
+      "application/zip": [".pptx"],
+      "application/x-zip-compressed": [".pptx"],
       "text/markdown": [".md"],
       "text/plain": [".md"],
     },

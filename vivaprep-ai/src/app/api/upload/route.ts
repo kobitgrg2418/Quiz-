@@ -7,17 +7,51 @@ import { sanitizeInput, safeError, logSecurityEvent } from "@/lib/security";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
 
-const ALLOWED_TYPES: Record<string, { extensions: string[]; label: string }> = {
-  "application/pdf": { extensions: [".pdf"], label: "PDF" },
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
-    extensions: [".pptx"],
-    label: "PPTX",
-  },
-  "text/markdown": { extensions: [".md"], label: "Markdown" },
-  "text/plain": { extensions: [".md", ".txt"], label: "Text" },
+// Canonical MIME types we support
+const SUPPORTED_MIME_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/markdown",
+  "text/plain",
+] as const;
+
+// Map file extensions → canonical MIME type (used as fallback when browser
+// sends a generic MIME like application/octet-stream or an empty string)
+const EXT_TO_MIME: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".pptx":
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".md": "text/markdown",
 };
 
+const ALLOWED_EXTENSIONS = Object.keys(EXT_TO_MIME);
+
 export const maxDuration = 60;
+
+function resolveMimeType(browserMime: string, fileName: string): string | null {
+  const ext = fileName.toLowerCase().match(/\.[a-z]+$/)?.[0] || "";
+
+  // 1. If the browser sent a specific supported MIME, trust it — except
+  //    text/plain for .md files (browsers routinely do this)
+  if (browserMime === "text/plain" && ext === ".md") {
+    return "text/markdown";
+  }
+  if ((SUPPORTED_MIME_TYPES as readonly string[]).includes(browserMime)) {
+    return browserMime;
+  }
+
+  // 2. Browser sent a generic/empty MIME → fall back to extension
+  if (
+    !browserMime ||
+    browserMime === "application/octet-stream" ||
+    browserMime === "application/x-zip-compressed" ||
+    browserMime === "application/zip"
+  ) {
+    return EXT_TO_MIME[ext] ?? null;
+  }
+
+  return null;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,16 +78,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Determine effective MIME type — browsers may send .md as text/plain
-    let mimeType = file.type;
-    if (
-      mimeType === "text/plain" &&
-      file.name.toLowerCase().endsWith(".md")
-    ) {
-      mimeType = "text/markdown";
-    }
-
-    if (!ALLOWED_TYPES[mimeType]) {
+    // Resolve MIME type with extension fallback (browsers often send
+    // application/octet-stream or empty string for .pptx files)
+    const mimeType = resolveMimeType(file.type, file.name);
+    if (!mimeType) {
       return NextResponse.json(
         { error: "Only PDF, PPTX, and Markdown files are accepted" },
         { status: 400 }
@@ -69,8 +97,7 @@ export async function POST(req: NextRequest) {
 
     const fileName = file.name.replace(/[^\w\s.\-()]/gi, "").slice(0, 200);
     const ext = fileName.toLowerCase().match(/\.[a-z]+$/)?.[0] || "";
-    const allowedExts = Object.values(ALLOWED_TYPES).flatMap((t) => t.extensions);
-    if (!fileName || !allowedExts.includes(ext)) {
+    if (!fileName || !ALLOWED_EXTENSIONS.includes(ext)) {
       return NextResponse.json(
         { error: "Invalid file name" },
         { status: 400 }
@@ -111,7 +138,7 @@ export async function POST(req: NextRequest) {
     }
 
     const title = sanitizeInput(
-      fileName.replace(/\.(pdf|pptx|md|txt)$/i, "").replace(/[-_]/g, " ")
+      fileName.replace(/\.(pdf|pptx|md)$/i, "").replace(/[-_]/g, " ")
     );
 
     const document = await prisma.document.create({
