@@ -77,7 +77,7 @@ async function extractText(
     mimeType ===
     "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   ) {
-    const ast = await parseOffice(buffer);
+    const ast = await parseOffice(buffer, { fileType: "pptx" });
     const text = ast.toText();
     const slideCount = ast.metadata?.pages ?? (text.match(/\n{2,}/g) || []).length + 1;
     return { text, pageCount: slideCount };
