@@ -19,6 +19,19 @@ import type {
   GeneratedInterviewQuestions,
 } from "@/types";
 
+function parseJSON<T>(raw: string): T {
+  let text = raw.trim();
+  const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  if (fenceMatch) {
+    text = fenceMatch[1].trim();
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`AI returned invalid JSON: ${text.slice(0, 200)}`);
+  }
+}
+
 export async function generateQuiz(
   content: string,
   mode: string = "MEDIUM",
@@ -27,9 +40,10 @@ export async function generateQuiz(
 ): Promise<GeneratedQuiz> {
   const result = await generateCompletion(
     QUIZ_SYSTEM_PROMPT,
-    buildQuizPrompt(content, mode, type, count)
+    buildQuizPrompt(content, mode, type, count),
+    { maxTokens: Math.max(8192, count * 400) }
   );
-  return JSON.parse(result);
+  return parseJSON<GeneratedQuiz>(result);
 }
 
 export async function generateFlashcards(
@@ -40,7 +54,7 @@ export async function generateFlashcards(
     FLASHCARD_SYSTEM_PROMPT,
     buildFlashcardPrompt(content, count)
   );
-  return JSON.parse(result);
+  return parseJSON<GeneratedFlashcardSet>(result);
 }
 
 export async function generateSummary(
@@ -51,7 +65,7 @@ export async function generateSummary(
     SUMMARY_SYSTEM_PROMPT,
     buildSummaryPrompt(content, mode)
   );
-  return JSON.parse(result);
+  return parseJSON<GeneratedSummary>(result);
 }
 
 export async function generateVivaQuestions(
@@ -61,7 +75,7 @@ export async function generateVivaQuestions(
     VIVA_SYSTEM_PROMPT,
     buildVivaPrompt(content)
   );
-  return JSON.parse(result);
+  return parseJSON<GeneratedVivaQuestions>(result);
 }
 
 export async function generateInterviewQuestions(
@@ -71,5 +85,5 @@ export async function generateInterviewQuestions(
     INTERVIEW_SYSTEM_PROMPT,
     buildInterviewPrompt(content)
   );
-  return JSON.parse(result);
+  return parseJSON<GeneratedInterviewQuestions>(result);
 }

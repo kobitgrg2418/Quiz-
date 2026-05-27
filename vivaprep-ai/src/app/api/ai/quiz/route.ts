@@ -128,9 +128,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(quiz);
   } catch (error: unknown) {
     console.error("Quiz generation error:", safeError(error));
-    const message = (error instanceof Error && error.message?.includes("GEMINI_API_KEY"))
-      ? "Gemini API key not configured. Add GEMINI_API_KEY to .env to enable quiz generation."
-      : "Failed to generate quiz";
+    let message = "Failed to generate quiz. Please try again.";
+    if (error instanceof Error) {
+      if (error.message.includes("GEMINI_API_KEY")) {
+        message = "Gemini API key not configured. Add GEMINI_API_KEY to .env to enable quiz generation.";
+      } else if (error.message.includes("invalid JSON")) {
+        message = "AI returned an unexpected response. Please try again.";
+      } else if (error.message.includes("Empty response")) {
+        message = "AI returned an empty response. Please try again with different content.";
+      }
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

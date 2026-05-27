@@ -21,17 +21,33 @@ export async function generateCompletion(
 ): Promise<string> {
   const genai = getGenAI();
 
-  const response = await genai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: `${systemPrompt}\n\n${userPrompt}`,
-    config: {
-      temperature: options?.temperature ?? 0.7,
-      maxOutputTokens: options?.maxTokens ?? 4096,
-      responseMimeType: "application/json",
-    },
-  });
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await genai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `${systemPrompt}\n\n${userPrompt}`,
+        config: {
+          temperature: options?.temperature ?? 0.7,
+          maxOutputTokens: options?.maxTokens ?? 8192,
+          responseMimeType: "application/json",
+        },
+      });
 
-  return response.text ?? "";
+      const text = response.text?.trim();
+      if (!text) {
+        throw new Error("Empty response from AI model");
+      }
+      return text;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 export async function generateStreamingCompletion(
